@@ -8,6 +8,8 @@ Parte da avaliação (Modelagem 40% e "Como usou IA"): mostrar que conferi o que
 | 1 | 2026-11-07 | desenho (pré-código) | Citou métricas (34 divergentes, R$316k, R$354k, concentração em usuario_07) como resultado | Junção só por número de NF, sem emitente/série/parcela; contracálculo contraditório | Métricas suspensas; protocolo de reprodução em `docs/03-DADOS.md` |
 | 2 | 2026-11-07 | desenho (pré-código) | Idempotência marcando só `titulo_id` | Impede reavaliar título que ficou arriscado depois | Três chaves: evento, versão das evidências, ação pretendida |
 
+| 3 | 2026-11-07 | T0 | `tests/test_dados.py` importou o script por `importlib` sem registrar o módulo | `@dataclass` do script quebrou na coleta (`sys.modules` sem o módulo) | Registrei `sys.modules["validar_dados"]` antes do `exec_module`; 36 testes passam |
+
 _(acrescentar linhas a partir daqui durante o build)_
 
 ## Prompts que funcionaram
