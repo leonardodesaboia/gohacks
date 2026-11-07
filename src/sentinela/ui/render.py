@@ -115,10 +115,26 @@ def html_hero(s: vm.Sessao) -> str:
 
 # ------------------------------------------------------------------ resumo e fila do analista
 def html_resumo(s: vm.Sessao) -> str:
+    """O fluxo do agente em 4 passos, com o número de cada um: explica a aplicação e mostra o que já aconteceu."""
     t = vm.totais(s)
-    itens = [(t["retirados"], "retirados do lote"), (t["corrigidos"], "corrigidos"), (t["aprovacoes"], "aprovações pedidas"), (t["pessoas"], "pessoas chamadas")]
-    cels = "".join(f'<div class="sx-kpi"><dd class="sx-kpi-num sx-num">{n}</dd><dt>{e(rot)}</dt></div>' for n, rot in itens)
-    return f'<section aria-label="Resumo"><dl class="sx-kpis">{cels}</dl></section>'
+    cartoes, sem_alerta = vm.cartoes_comunicacao(s)
+    suspeitas = sum(1 for c in cartoes if c["nivel"] == "alto")
+    passos = [
+        ("sx-passo--chega", "Chega uma mensagem", len(cartoes) + sem_alerta, "mensagens de fornecedores", "E-mails e WhatsApp que chegam ao financeiro."),
+        ("sx-passo--ia", "A IA lê", suspeitas, "suspeitas", "Só extrai o que a mensagem pede e cita o trecho. Não decide nada."),
+        ("sx-passo--codigo", "O código decide", t["retirados"] + t["corrigidos"], "pagamentos mexidos", "Regras fixas: retirar do lote, corrigir ou seguir."),
+        ("sx-passo--acao", "Chama a pessoa certa", t["pessoas"], "pessoas chamadas", "Com o dossiê pronto. Chamar não é aprovar."),
+    ]
+    cels = "".join(
+        f'<li class="sx-passo {cl}"><span class="sx-passo-n" aria-hidden="true">{i}</span><h3 class="sx-passo-tit">{e(tit)}</h3>'
+        f'<p class="sx-passo-num"><span class="sx-num">{n}</span> {e(rot)}</p><p class="sx-passo-desc">{e(desc)}</p></li>'
+        for i, (cl, tit, n, rot, desc) in enumerate(passos, 1)
+    )
+    return (
+        '<section aria-labelledby="h-fluxo"><h2 class="sx-h2" id="h-fluxo">Como o agente trabalha</h2>'
+        '<p class="sx-leg">Um analista de contas a pagar que nunca dorme: confere cada pagamento antes de o banco fechar o lote e só incomoda gente de verdade quando precisa.</p>'
+        f'<ol class="sx-fluxo">{cels}</ol></section>'
+    )
 
 
 def _o_que_fazer(c: dict[str, Any]) -> str:

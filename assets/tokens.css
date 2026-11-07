@@ -95,6 +95,20 @@ html, body, .stApp { font-family: var(--gc-font); color: var(--gc-ink); -webkit-
 .sx-regra li { margin: 3px 0; overflow-wrap: anywhere; }
 .sx-chamar { margin: 10px 0 0; font-size: 14px; }
 
+/* ---- fluxo em 4 passos */
+.sx-fluxo { list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 0; }
+.sx-passo { position: relative; background: var(--gc-fundo); border: 2px solid var(--gc-ink); border-radius: 16px; padding: 14px 16px 14px; }
+.sx-passo:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -17px; width: 14px; height: 14px; border-top: 3px solid var(--gc-ink); border-right: 3px solid var(--gc-ink); transform: translateY(-50%) rotate(45deg); }
+.sx-passo-n { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; font-weight: 800; font-size: 14px; color: var(--gc-ink); border: 2px solid var(--gc-ink); }
+.sx-passo--chega .sx-passo-n { background: var(--gc-fundo-2); }
+.sx-passo--ia .sx-passo-n { background: var(--gc-azul); color: #FFFFFF; }
+.sx-passo--codigo .sx-passo-n { background: var(--gc-turquesa); }
+.sx-passo--acao .sx-passo-n { background: var(--gc-coral); }
+.sx-passo-tit { font-size: 17px; font-weight: 800; margin: 8px 0 4px; }
+.sx-passo-num { margin: 0 0 6px; font-size: 14px; color: var(--gc-ink-2); }
+.sx-passo-num .sx-num { font-size: 30px; font-weight: 800; color: var(--gc-ink); margin-right: 4px; }
+.sx-passo-desc { margin: 0; font-size: 14px; line-height: 1.4; color: var(--gc-ink-2); text-wrap: pretty; }
+
 /* ---- resumo e fila do analista */
 .sx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0 0; }
 .sx-kpi { background: var(--gc-fundo); border: 1px solid var(--gc-linha); border-radius: 16px; padding: 12px 16px; display: flex; flex-direction: column-reverse; gap: 2px; }
@@ -153,9 +167,10 @@ html, body, .stApp { font-family: var(--gc-font); color: var(--gc-ink); -webkit-
 .gc-selo--degradado { background: var(--gc-fundo); border: 2px dashed var(--gc-coral); }
 
 /* ---- responsivo: sem rolagem horizontal da página; a linha do tempo vira lista em tela estreita */
-@media (max-width: 900px) { .sx-grade { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .sx-grade { grid-template-columns: minmax(0, 1fr); } .sx-fluxo { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sx-passo::after { display: none; } }
 @media (max-width: 720px) {
-  .sx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sx-fluxo { grid-template-columns: minmax(0, 1fr); }
+  .sx-passo:not(:last-child)::after { display: none; }
   .sx-duas { grid-template-columns: minmax(0, 1fr); }
   .sx-ia { padding-right: 0; border-right: 0; padding-bottom: 12px; border-bottom: 1px solid var(--gc-linha); }
   .sx-regra { padding-left: 0; padding-top: 12px; }
