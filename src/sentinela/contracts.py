@@ -76,6 +76,8 @@ class FornecedorRef(_Base):
     cnpj: str = Field(description="CNPJ completo, só dígitos")
     raiz_cnpj: str = Field(min_length=8, max_length=8)
     categoria: str
+    razao_social: str | None = None
+    nome_fantasia: str | None = None
     email_cadastrado: str | None = None
     telefone_cadastrado: str | None = None
 

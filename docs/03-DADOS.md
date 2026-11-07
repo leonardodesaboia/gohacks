@@ -71,6 +71,17 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Feriado de remessa:** só entram feriados com `afeta_remessa = sim` (nacionais). Estaduais/municipais não bloqueiam remessa. 02/11 (Finados) bloqueia; o primeiro fechamento do período é **03/11 10:00 (MER)**.
 - **Efeito da alçada na demo:** `corrigir_lancamento` de valor só vale sem aprovação se **|novo − atual| ≤ R$5.000**. Um erro de fator 10× com título grande (ex.: R$90 mil → R$9 mil) exige aprovador. Para a demo 2 escolha um título pequeno (≲ R$5,5 mil).
 
+## Achados da T3 (identidade, medidos no corte; detalhes em `reports/identidade.md`)
+
+- **Fornecedor é chave limpa:** 131 fornecedores, CNPJs válidos, raízes únicas; todas as 6.055 OCs resolvem para exatamente um fornecedor (matriz); `cod_fornecedor_compras` ↔ raiz é 1:1. **Não há ambiguidade de fornecedor**; a ambiguidade real é a da NF (T4).
+- **NF:** 4.151 NFs; 3.951 de matriz e **200 de filial** (mesma raiz, outro estabelecimento, razão social diferente). Todas resolvem.
+- **Títulos (7.120):** 7.117 coerentes; **3 divergentes, todos já agendados**:
+  - `TP431946` (FP5079, R$ 9.870,50, lote RM20261106-MER): a OC OC-40703 pertence ao FP6799. Fornecedor possivelmente errado no lançamento.
+  - `TP432337` (FP3614, R$ 12.380,00, lote RM20261110-MER): a OC OC-41231 pertence ao FP3302.
+  - `TP431754` (FP4345 Pigmentos Aquarela, R$ 11.740,00, boleto, vence 03/11, **lote RM20261103-MER, primeiro fechamento do período**): o CNPJ do beneficiário do boleto (`61.525.615/0001-26`) não é o do fornecedor (`20.623.234/0001-00`) e é **o mesmo CNPJ do boleto anexado no e-mail EM571116** (29/10 11:05, `cobranca.pigmentosaquarela@outlook.com`, "2ª via... favor desconsiderar o anterior"). A política diz que 2ª via com beneficiário diferente não pode ser paga sem confirmação no canal do cadastro. **Candidato a demo de golpe de boleto**, além do Embalarte. Observação: o título foi lançado em 08/10, antes do e-mail; não afirmar quem inseriu o CNPJ.
+- **Comunicações (246):** 241 vêm do e-mail cadastrado do fornecedor. Os 5 que não conferem são exatamente os suspeitos: EM571119 (Embalarte, vincula por CNPJ e nome, remetente `embalartte`), EM571116 (Pigmentos, `outlook.com`, só evidência de nome → ambíguo) e três impersonações de não-fornecedores (EM570977 falsa Receita, EM570998 falso cartório, EM571100 falso Banco Meridiano → sem vínculo).
+- **O vínculo é por sinais explícitos** (e-mail exato 4 pts, domínio 3, CNPJ no texto 3, nome 1; ≥3 e único = ok). `remetente_confere` é o sinal determinístico que a T5 usa.
+
 ## Métricas — SUSPENSAS, reproduzir antes de usar
 
 Não existe número validado. Valores abaixo vêm de auditorias anteriores **não reproduzidas** e **não podem** aparecer em código, UI, slides ou submissão:
