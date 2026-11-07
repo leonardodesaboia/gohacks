@@ -40,6 +40,11 @@ html, body, .stApp { font-family: var(--gc-font); color: var(--gc-ink); -webkit-
 .stButton > button:active { transform: scale(0.98); }
 .stButton > button:focus-visible { outline: var(--gc-foco); outline-offset: 2px; }
 
+/* abas do Streamlit: alvo de 44px e aba ativa na cor da marca */
+.stTabs [data-baseweb="tab"] { min-height: 44px; font-weight: 700; padding: 0 16px; }
+.stTabs [aria-selected="true"] { color: var(--gc-azul); }
+.stTabs [data-baseweb="tab-highlight"] { background-color: var(--gc-azul); height: 4px; }
+
 /* ---- hero: um bloco chapado da cor da marca; a manchete é uma frase, não um número solto */
 .sx-pagina { display: block; }
 .sx-hero { background: var(--gc-azul); color: #FFFFFF; border-radius: 20px; padding: 28px clamp(20px, 4vw, 40px) 26px; }

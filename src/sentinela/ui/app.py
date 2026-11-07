@@ -52,4 +52,10 @@ if c3.button("Recomeçar o cenário", key="reiniciar", use_container_width=True)
         st.session_state["sessao"] = s = vm.criar_sessao(chave, extrator)
 
 # ------------------------------------------------------------------ a página
-st.html(render.pagina(s, svg_embutido=False))  # o sanitizador do st.html remove <svg>: a linha do tempo vai como imagem
+st.html(render.html_hero(s))
+secoes = render.abas(s, svg_embutido=False)  # svg como imagem: o sanitizador do st.html remove <svg>
+guias = st.tabs([rot for _, rot, _ in secoes])
+for guia, (_, _, conteudo) in zip(guias, secoes):
+    with guia:
+        st.html(f'<div class="sx-pagina">{conteudo}</div>')
+st.html(render.html_rodape())

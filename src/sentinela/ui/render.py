@@ -246,9 +246,9 @@ def html_chamados(s: vm.Sessao) -> str:
 
 def html_acoes(s: vm.Sessao) -> str:
     linhas = vm.decisoes_recentes(s, 12)
-    p = ['<section aria-labelledby="h-acoes"><details class="sx-mais sx-mais--grande"><summary id="h-acoes">Detalhe técnico: o que o agente fez no último tique</summary>']
+    p = ['<section aria-labelledby="h-acoes"><h2 class="sx-h2" id="h-acoes">O que o agente fez no último tique</h2>']
     if not linhas:
-        p.append('<p class="sx-leg">Nenhuma ação neste tique: tudo foi conferido dentro da política.</p></details></section>')
+        p.append('<p class="sx-leg">Nenhuma ação neste tique: tudo foi conferido dentro da política.</p></section>')
         return "".join(p)
     corpo = "".join(
         f'<tr><td class="num">{e(formatar_brl(l["valor"])) if l["valor"] is not None else "—"}</td><td>{e(l["ref"])}</td><td>{selo_decisao(l["acao"])}</td>'
@@ -266,13 +266,29 @@ def html_acoes(s: vm.Sessao) -> str:
 # ------------------------------------------------------------------ página
 def pagina(s: vm.Sessao, svg_embutido: bool = True) -> str:
     """`svg_embutido=True` (site estático): SVG inline. False (Streamlit): imagem SVG embutida, que o sanitizador aceita."""
-    corpo = [html_hero(s), html_resumo(s)]
-    if not s.registros:
-        corpo.append('<p class="sx-vazio">Ainda não há o que mostrar. Use <strong>Avançar 1 hora</strong>: o agente só vê o que já chegou, e o relógio só anda para a frente.</p>')
-        corpo.append(html_tempo(s, svg_embutido))
-    else:
-        corpo.append(f'<div class="sx-grade"><div class="sx-col">{html_alertas(s)}</div><div class="sx-col">{html_lote(s)}{html_chamados(s)}</div></div>')
-        corpo.append(html_tempo(s, svg_embutido))
-        corpo.append(html_acoes(s))
-    corpo.append(f'<p class="sx-rodape">{e(RODAPE)}</p>')
+    corpo = [html_hero(s)]
+    corpo += [f'<div class="sx-secao" data-aba="{i}">{h}</div>' for i, _, h in abas(s, svg_embutido)]
+    corpo.append(html_rodape())
     return f'<div class="sx-pagina">{"".join(corpo)}</div>'
+
+
+# ------------------------------------------------------------------ abas
+ABAS = [("geral", "Visão geral"), ("fila", "Fila do analista"), ("lote", "Lote"), ("chamados", "Quem foi chamado"), ("registro", "Registro técnico")]
+
+
+def html_rodape() -> str:
+    return f'<p class="sx-rodape">{e(RODAPE)}</p>'
+
+
+def abas(s: vm.Sessao, svg_embutido: bool = True) -> list[tuple[str, str, str]]:
+    """O conteúdo da tela dividido em abas: (id, rótulo, html). Rótulos fixos: o Streamlit zera a aba ativa se mudarem."""
+    vazio = '<p class="sx-vazio">Ainda não há o que mostrar. Use <strong>Avançar 1 hora</strong>: o agente só vê o que já chegou, e o relógio só anda para a frente.</p>'
+    com_dados = bool(s.registros)
+    conteudo = {
+        "geral": html_resumo(s) + html_tempo(s, svg_embutido),
+        "fila": html_alertas(s) if com_dados else vazio,
+        "lote": html_lote(s) if com_dados else vazio,
+        "chamados": html_chamados(s) if com_dados else vazio,
+        "registro": html_acoes(s) if com_dados else vazio,
+    }
+    return [(i, rot, conteudo[i]) for i, rot in ABAS]

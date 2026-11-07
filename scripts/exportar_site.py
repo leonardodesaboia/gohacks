@@ -9,6 +9,7 @@ Uso:  PYTHONUTF8=1 PYTHONPATH=src python scripts/exportar_site.py
 
 from __future__ import annotations
 
+import html
 import json
 import sys
 from pathlib import Path
@@ -49,15 +50,24 @@ body { margin: 0; background: var(--gc-fundo-2); font-family: var(--gc-font); co
 .sx-btn[aria-pressed="true"], .sx-btn--primario { background: var(--gc-azul); color: #FFFFFF; }
 .sx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .sx-desc { color: var(--gc-ink-2); font-size: 14px; margin: 0 0 14px; max-width: 60em; }
+.sx-abas { display: flex; gap: 4px; overflow-x: auto; margin: 18px 0 0; border-bottom: 2px solid var(--gc-linha); }
+.sx-aba { font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; background: none; border: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; color: var(--gc-ink-2); cursor: pointer; white-space: nowrap;
+  transition-property: color, border-color; transition-duration: 150ms; transition-timing-function: ease-out; }
+.sx-aba[aria-selected="true"] { color: var(--gc-azul); border-bottom-color: var(--gc-azul); }
+.sx-painel { padding-top: 8px; }
 """
+
+
+def _tique(s: vm.Sessao) -> dict:
+    return {"hero": render.html_hero(s), "abas": [h for _, _, h in render.abas(s, svg_embutido=True)]}
 
 
 def _rodar(chave: str) -> dict:
     s = vm.criar_sessao(chave)
-    paginas = [render.pagina(s, svg_embutido=True)]
+    paginas = [_tique(s)]
     pre = None
     while vm.avancar(s) is not None:
-        paginas.append(render.pagina(s, svg_embutido=True))
+        paginas.append(_tique(s))
         if pre is None and any(e.tipo is TipoEvento.PRE_FECHAMENTO for e in s.registros[-1].eventos):
             pre = len(paginas) - 1
     c = vm.CENARIOS[chave]
@@ -91,16 +101,33 @@ def montar() -> str:
       <button type="button" class="sx-btn" id="reiniciar">Recomeçar o cenário</button>
     </div>
   </div>
-  <div id="pagina"></div>
+  <div id="hero"></div>
+  <div class="sx-abas" role="tablist" aria-label="Seções" id="abas"></div>
+  <div class="sx-painel sx-pagina" role="tabpanel" id="painel" tabindex="0"></div>
+  <p class="sx-rodape">{html.escape(render.RODAPE)}</p>
   <p class="sx-so-leitor" role="status" aria-live="polite" id="aviso"></p>
 </main>
 <script>
 const DADOS = {payload};
-let atual = 0, tique = 0;
+const ROTULOS = {json.dumps([rot for _, rot in render.ABAS], ensure_ascii=False)};
+let atual = 0, tique = 0, aba = 0;
 const $ = (id) => document.getElementById(id);
+ROTULOS.forEach((rot, i) => {{
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "sx-aba"; b.id = "aba-" + i; b.setAttribute("role", "tab"); b.textContent = rot;
+  b.onclick = () => {{ aba = i; desenhar(""); }};
+  b.onkeydown = (ev) => {{
+    const d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
+    if (d) {{ aba = (i + d + ROTULOS.length) % ROTULOS.length; desenhar(""); $("aba-" + aba).focus(); ev.preventDefault(); }}
+  }};
+  $("abas").appendChild(b);
+}});
 function desenhar(anuncio) {{
   const c = DADOS[atual], ultimo = c.paginas.length - 1;
-  $("pagina").innerHTML = c.paginas[tique];
+  $("hero").innerHTML = c.paginas[tique].hero;
+  $("painel").innerHTML = c.paginas[tique].abas[aba];
+  $("painel").setAttribute("aria-labelledby", "aba-" + aba);
+  [...$("abas").children].forEach((b, i) => {{ b.setAttribute("aria-selected", String(i === aba)); b.tabIndex = i === aba ? 0 : -1; }});
   $("desc").textContent = c.descricao;
   $("avancar").disabled = tique >= ultimo;
   $("pre").disabled = tique >= ultimo;
