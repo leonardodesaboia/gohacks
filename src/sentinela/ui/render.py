@@ -258,7 +258,7 @@ def html_acoes(s: vm.Sessao) -> str:
     p.append(
         '<div class="sx-rolagem"><table class="sx-tabela"><caption class="sx-so-leitor">Ações do último tique, por valor</caption>'
         '<thead><tr><th scope="col">Valor</th><th scope="col">Título</th><th scope="col">Ação</th><th scope="col">Regra aplicada</th><th scope="col">Motivo</th><th scope="col">Chamou</th></tr></thead>'
-        f'<tbody>{corpo}</tbody></table></div><p class="sx-leg">Os 12 de maior valor com ação. Os demais títulos foram conferidos e seguem sem ação.</p></details></section>'
+        f'<tbody>{corpo}</tbody></table></div><p class="sx-leg">Os 12 de maior valor com ação. Os demais títulos foram conferidos e seguem sem ação.</p></section>'
     )
     return "".join(p)
 
