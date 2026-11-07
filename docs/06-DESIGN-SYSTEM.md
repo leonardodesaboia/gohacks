@@ -2,6 +2,8 @@
 
 Aplicação da linguagem visual da **Gocase** (marca do Gogroup, host do evento) à UI de narração e aos slides.
 
+> **Revisão de 07/11/2026:** a pedido do usuário, a aplicação passou a priorizar a aparência de um sistema operacional de contas a pagar. A direção vigente da interface está em [07-REVISAO-UX-UI.md](07-REVISAO-UX-UI.md): superfícies claras, cabeçalho compacto, uma única família tipográfica, fila organizada e cores discretas de estado. As referências de marca abaixo continuam como origem da paleta e referência para os slides; os antigos blocos grandes e a tipografia manuscrita não são mais usados na aplicação.
+
 > **Ressalva de precisão:** não existe design system público completo da Gogroup. A paleta e a tipografia abaixo vêm do brandbook e playbook da Gocase de 2022 (materiais de terceiros e da marca). São cores históricas documentadas, **não** confirmação da paleta institucional atual da holding. O rosa-claro aparece como `#FFD6DC` (playbook) e `#FBD4DA` (brandbook); usamos `#FFD6DC`. Tokens, neutros derivados e mapeamento semântico abaixo são **proposta deste projeto**, não componentes oficiais. Não usar logotipo da Gocase/Gogroup.
 
 ## Direção

@@ -1,0 +1,1029 @@
+{
+  "pages": [
+    {
+      "name": "after-desktop-initial",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-desktop-overview",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625,
+        434.640625
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-desktop-evidence",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875,
+        704.71875
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": null
+        }
+      ]
+    },
+    {
+      "name": "after-1024-evidence",
+      "viewport": 1024,
+      "width": 1024,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875,
+        525.875
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": null
+        }
+      ]
+    },
+    {
+      "name": "after-768-evidence",
+      "viewport": 768,
+      "width": 768,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125,
+        375.28125
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-390-evidence",
+      "viewport": 390,
+      "width": 390,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324,
+        324
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": null
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": null
+        }
+      ]
+    },
+    {
+      "name": "after-320-evidence",
+      "viewport": 320,
+      "width": 320,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254,
+        254
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": null
+        }
+      ]
+    },
+    {
+      "name": "after-desktop-batch",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-desktop-contacts",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-desktop-history",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-mobile-approvals",
+      "viewport": 320,
+      "width": 320,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Visão geral",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Fila do analista",
+          "height": 48,
+          "hit": true
+        },
+        {
+          "text": "Lote de pagamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Encaminhamentos",
+          "height": 48,
+          "hit": null
+        },
+        {
+          "text": "Histórico de ações",
+          "height": 48,
+          "hit": null
+        }
+      ]
+    },
+    {
+      "name": "after-streamlit-initial",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 40,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-streamlit-overview",
+      "viewport": 1440,
+      "width": 1440,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875,
+        379.1875
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 40,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "name": "after-streamlit-mobile",
+      "viewport": 390,
+      "width": 390,
+      "heading": "Conferência de pagamentos",
+      "evidenceWidths": [
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292,
+        292
+      ],
+      "controls": [
+        {
+          "text": "Mensagem suspeita às 15:42",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Fila inteira no corte",
+          "height": 32,
+          "hit": true
+        },
+        {
+          "text": "Avançar 1 hora",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "Concluir cenário",
+          "height": 40,
+          "hit": true
+        },
+        {
+          "text": "Recomeçar o cenário",
+          "height": 44,
+          "hit": true
+        },
+        {
+          "text": "",
+          "height": 40,
+          "hit": true
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "checks": [
+    "Static: both scenarios, all tabs, 320–1440 px, before/after, end/reset, keyboard Home/End. No CSS injected.",
+    "Streamlit: initial state, three steps, queue, evidence, mobile."
+  ]
+}

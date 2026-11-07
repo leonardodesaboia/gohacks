@@ -9,7 +9,6 @@ Uso:  PYTHONUTF8=1 PYTHONPATH=src python scripts/exportar_site.py
 
 from __future__ import annotations
 
-import html
 import json
 import sys
 from pathlib import Path
@@ -17,53 +16,39 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ / "src"))
 
-from sentinela.loop import TipoEvento  # noqa: E402
-from sentinela.ui import render  # noqa: E402
-from sentinela.ui import viewmodel as vm  # noqa: E402
+from sentinela.loop import TipoEvento
+from sentinela.ui import render
+from sentinela.ui import viewmodel as vm
 
 SAIDA = RAIZ / "site"
 
 VERCEL = {
     "cleanUrls": True,
-    "headers": [{
-        "source": "/(.*)",
-        "headers": [
-            {"key": "X-Content-Type-Options", "value": "nosniff"},
-            {"key": "Referrer-Policy", "value": "no-referrer"},
-            {"key": "X-Frame-Options", "value": "DENY"},
-            {"key": "Content-Security-Policy", "value": (
-                "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src https://fonts.gstatic.com; img-src data:; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
-            )},
-        ],
-    }],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {"key": "X-Content-Type-Options", "value": "nosniff"},
+                {"key": "Referrer-Policy", "value": "no-referrer"},
+                {"key": "X-Frame-Options", "value": "DENY"},
+                {
+                    "key": "Content-Security-Policy",
+                    "value": (
+                        "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; "
+                        "font-src https://fonts.gstatic.com; img-src data:; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"
+                    ),
+                },
+            ],
+        }
+    ],
 }
-
-CSS_EXTRA = """
-body { margin: 0; background: var(--gc-fundo-2); font-family: var(--gc-font); color: var(--gc-ink); }
-.sx-site { max-width: 1180px; margin: 0 auto; padding: 20px clamp(14px, 3vw, 24px) 48px; }
-.sx-controles { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
-.sx-grupo { display: flex; flex-wrap: wrap; gap: 8px; }
-.sx-btn { font: inherit; font-weight: 700; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 2px solid var(--gc-azul); background: var(--gc-fundo); color: var(--gc-azul); cursor: pointer;
-  transition-property: background-color, color, transform; transition-duration: 150ms; transition-timing-function: ease-out; }
-.sx-btn:active { transform: scale(0.96); }
-.sx-btn[aria-pressed="true"], .sx-btn--primario { background: var(--gc-azul); color: #FFFFFF; }
-.sx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.sx-desc { color: var(--gc-ink-2); font-size: 14px; margin: 0 0 14px; max-width: 60em; }
-.sx-abas { display: flex; gap: 4px; overflow-x: auto; margin: 18px 0 0; border-bottom: 2px solid var(--gc-linha); }
-.sx-aba { font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; background: none; border: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; color: var(--gc-ink-2); cursor: pointer; white-space: nowrap;
-  transition-property: color, border-color; transition-duration: 150ms; transition-timing-function: ease-out; }
-.sx-aba:hover { color: var(--gc-azul); }
-.sx-aba:focus-visible, .sx-btn:focus-visible { outline: var(--gc-foco); outline-offset: -4px; }
-.sx-btn:hover:not(:disabled) { background: var(--gc-fundo-2); }
-.sx-controles--topo { margin-top: 16px; }
-.sx-aba[aria-selected="true"] { color: var(--gc-azul); border-bottom-color: var(--gc-azul); }
-.sx-painel { padding-top: 8px; }
-"""
 
 
 def _tique(s: vm.Sessao) -> dict:
-    return {"hero": render.html_hero(s), "abas": [h for _, _, h in render.abas(s, svg_embutido=True)]}
+    return {
+        "hero": render.html_hero(s),
+        "abas": [h for _, _, h in render.abas(s, svg_embutido=True)],
+    }
 
 
 def _rodar(chave: str) -> dict:
@@ -72,15 +57,24 @@ def _rodar(chave: str) -> dict:
     pre = None
     while vm.avancar(s) is not None:
         paginas.append(_tique(s))
-        if pre is None and any(e.tipo is TipoEvento.PRE_FECHAMENTO for e in s.registros[-1].eventos):
+        if pre is None and any(
+            e.tipo is TipoEvento.PRE_FECHAMENTO for e in s.registros[-1].eventos
+        ):
             pre = len(paginas) - 1
     c = vm.CENARIOS[chave]
-    return {"chave": chave, "curto": c.curto, "descricao": c.descricao, "paginas": paginas, "pre": pre if pre is not None else len(paginas) - 1}
+    return {
+        "chave": chave,
+        "curto": c.curto,
+        "descricao": c.descricao,
+        "paginas": paginas,
+        "tem_pre": pre is not None,
+        "pre": pre if pre is not None else len(paginas) - 1,
+    }
 
 
 def montar() -> str:
     dados = [_rodar(k) for k in vm.CENARIOS]
-    css = (RAIZ / "assets" / "tokens.css").read_text(encoding="utf-8") + CSS_EXTRA
+    css = (RAIZ / "assets" / "tokens.css").read_text(encoding="utf-8")
     payload = json.dumps(dados, ensure_ascii=False).replace("</", "<\\/")
     return f"""<!doctype html>
 <html lang="pt-BR">
@@ -95,20 +89,21 @@ def montar() -> str:
 <body>
 <main class="sx-site">
   <div id="hero"></div>
-  <div class="sx-controles sx-controles--topo">
-    <div class="sx-grupo" id="cenarios" role="group" aria-label="Cenário"></div>
-  </div>
-  <p class="sx-desc" id="desc"></p>
-  <div class="sx-controles">
-    <div class="sx-grupo">
-      <button type="button" class="sx-btn sx-btn--primario" id="avancar">Avançar 1 hora</button>
-      <button type="button" class="sx-btn" id="pre">Até o pré-fechamento</button>
-      <button type="button" class="sx-btn" id="reiniciar">Recomeçar o cenário</button>
+  <section class="sx-toolbar" aria-label="Controles da simulação">
+    <p class="sx-toolbar-label">Cenário da simulação</p>
+    <div class="sx-toolbar-row">
+      <div class="sx-grupo" id="cenarios" role="group" aria-label="Cenário"></div>
+      <div class="sx-controles">
+        <button type="button" class="sx-btn sx-btn--primario" id="avancar">Avançar 1 hora</button>
+        <button type="button" class="sx-btn" id="pre">Até o pré-fechamento</button>
+        <button type="button" class="sx-btn" id="reiniciar">Recomeçar o cenário</button>
+      </div>
     </div>
-  </div>
+    <p class="sx-desc" id="desc"></p>
+  </section>
   <div class="sx-abas" role="tablist" aria-label="Seções" id="abas"></div>
   <div class="sx-painel sx-pagina" role="tabpanel" id="painel" tabindex="0"></div>
-  <p class="sx-rodape">{html.escape(render.RODAPE)}</p>
+  {render.html_rodape()}
   <p class="sx-so-leitor" role="status" aria-live="polite" id="aviso"></p>
 </main>
 <script>
@@ -137,6 +132,7 @@ function desenhar(anuncio) {{
   $("desc").textContent = c.descricao;
   $("avancar").disabled = tique >= ultimo;
   $("pre").disabled = tique >= ultimo;
+  $("pre").textContent = c.tem_pre ? "Até o pré-fechamento" : "Concluir cenário";
   [...$("cenarios").children].forEach((b, i) => b.setAttribute("aria-pressed", String(i === atual)));
   if (document.activeElement && document.activeElement.disabled) $("painel").focus();
   if (anuncio) {{ $("aviso").textContent = ""; setTimeout(() => {{ $("aviso").textContent = anuncio + " " + ($("hero").querySelector("h1") || {{}}).textContent; }}, 50); }}
@@ -148,7 +144,7 @@ DADOS.forEach((c, i) => {{
   $("cenarios").appendChild(b);
 }});
 $("avancar").onclick = () => {{ tique = Math.min(tique + 1, DADOS[atual].paginas.length - 1); desenhar("Avançou uma hora."); }};
-$("pre").onclick = () => {{ tique = Math.max(tique, DADOS[atual].pre); desenhar("Avançou até o pré-fechamento."); }};
+$("pre").onclick = () => {{ tique = Math.max(tique, DADOS[atual].pre); desenhar(DADOS[atual].tem_pre ? "Avançou até o pré-fechamento." : "Simulação concluída."); }};
 $("reiniciar").onclick = () => {{ tique = 0; desenhar("Cenário recomeçado."); }};
 desenhar("");
 </script>
