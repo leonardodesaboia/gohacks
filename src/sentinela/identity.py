@@ -56,6 +56,20 @@ def cnpj_valido(valor: str | None) -> bool:
     return digito(d[:12], p1) == int(d[12]) and digito(d[:13], [6, *p1]) == int(d[13])
 
 
+def completar_cnpj(raiz: str, ordem: int) -> str:
+    """CNPJ completo (14 dígitos) de um estabelecimento da raiz: raiz + ordem (4 dígitos) + dígitos verificadores."""
+    base = f"{raiz}{ordem:04d}"
+
+    def digito(b: str, pesos: list[int]) -> int:
+        resto = sum(int(c) * p for c, p in zip(b, pesos)) % 11
+        return 0 if resto < 2 else 11 - resto
+
+    p1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    d1 = digito(base, p1)
+    d2 = digito(base + str(d1), [6, *p1])
+    return f"{base}{d1}{d2}"
+
+
 def _norm_texto(valor: str | None) -> str:
     sem_acento = unicodedata.normalize("NFKD", valor or "").encode("ascii", "ignore").decode()
     return re.sub(r"\s+", " ", sem_acento.lower()).strip()

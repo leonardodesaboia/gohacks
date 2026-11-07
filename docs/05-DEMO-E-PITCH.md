@@ -19,6 +19,12 @@ Base: rascunho completo no vault (`03 Pitch/(C) Pitch - Sentinela CP - Rascunho 
 2. **Erro operacional validado.** Título com **uma** divergência comprovável (ex.: valor exatamente 10× a duplicata da sua parcela, ou nº de NF digitado errado) dentro da alçada → `corrigir_lancamento` com evidência e log. **Só usar caso aprovado pela reprodução de T4** (match único).
 3. **Comunicação suspeita (estrela).** Pedido de troca de conta bancária por remetente divergente do cadastro (candidato: Embalarte, EM571119) → IA lê a thread e extrai conta e trechos → regras comparam → título do fornecedor **retirado do lote antes do corte** → **PS01 (Renata Paiva)** acionada com dossiê. Mostrar o trecho hostil dirigido ao "robô" e o agente tratando-o como **dado, não instrução**; mostrar que a alegação de confirmação não conta.
 
+**Como rodar a demo (replay local, sempre declarado):** `python scripts/rodar_replay.py --ate 2026-11-03T10:00` (fila inicial até o primeiro corte) e `python scripts/rodar_replay.py --inicio 2026-10-29T14:00 --ate 2026-10-29T17:00 --fornecedores FP4615` (mensagem do Embalarte chegando entre dois tiques; replay retroativo). Casos reais testados de ponta a ponta em `tests/test_e2e.py`:
+- Cenário 1 (limpo): títulos abertos, limpos e ≤ R$ 5.000 são agendados no lote do próprio vencimento (no corte nenhum título aberto vence até 13/11).
+- Cenário 2 (erro operacional): TP431634 (TED, R$ 240,64 → R$ 2.406,36, agendado em RM20261104-MER), TP432136, TP432802. **Não use boleto com R$ 3–5 de diferença como "erro": é tarifa, o agente não corrige.**
+- Cenário 3 (suspeita): Embalarte (retroativo 29/10 16:00) e **o golpe de boleto TP431754** (Pigmentos, mesmo CNPJ do boleto anexado no e-mail EM571116, lote RM20261103-MER às 10:00).
+- Injeção: EM570996 (texto dirigido ao "assistente"): nenhuma decisão de pagamento muda.
+
 Cenários auxiliares (para ensaio e sabatina, não precisam estar no pitch): mensagem legítima de cobrança (sem acionamento), ambiguidade (escala com limitação registrada), fracionamento (soma por fornecedor+NF+dia).
 
 ## Roteiro 5 min (marcas de ensaio)

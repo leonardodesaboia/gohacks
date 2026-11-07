@@ -204,6 +204,48 @@ def test_r6_valor_acima_da_alcada_retira_se_excesso_e_pede_aprovador():
     assert acoes(falta) == [Acao.SOLICITAR_APROVACAO]  # pagar a menos não perde dinheiro: não retira
 
 
+def test_r6_boleto_igual_ao_titulo_mas_acima_da_duplicata_nao_e_corrigido():
+    # tarifa de boleto: título e boleto R$ 841,58, duplicata R$ 837,08. Corrigir o título o faria divergir do boleto pago.
+    c = conf("divergente", ["valor_titulo"], D("837.08"), D("4.50"))
+    d = decidir(fatos(pagamento=pag("841.58", forma="boleto"), conferencia=c, valor_boleto=D("841.58")))
+    assert d.regra_aplicada == "R6_boleto_diverge_da_duplicata" and acoes(d) == [Acao.ACIONAR_PESSOA]  # não retém o pagamento
+    assert d.pessoa_a_acionar == "PS04" and d.fallback_no_corte is None
+
+
+def test_r6_boleto_com_excesso_material_retira_e_aciona_comprador():
+    c = conf("divergente", ["valor_titulo"], D("9087.38"), D("81786.42"))
+    d = decidir(fatos(pagamento=pag("90873.80", forma="boleto"), conferencia=c, valor_boleto=D("90873.80")))
+    assert acoes(d) == [Acao.RETIRAR, Acao.ACIONAR_PESSOA]
+    falta = decidir(fatos(pagamento=pag("240.64", forma="boleto"), conferencia=conf("divergente", ["valor_titulo"], D("2406.36"), D("-2165.72")), valor_boleto=D("240.64")))
+    assert acoes(falta) == [Acao.ACIONAR_PESSOA]  # pagar a menos não perde dinheiro
+
+
+def test_r6_boleto_certo_e_titulo_errado_corrige_o_titulo():
+    c = conf("divergente", ["valor_titulo"], D("2406.36"), D("-2165.72"))
+    d = decidir(fatos(pagamento=pag("240.64", forma="boleto"), conferencia=c, valor_boleto=D("2406.36")))
+    assert acoes(d) == [Acao.CORRIGIR] and d.acoes[0].parametros["valor_novo"] == D("2406.36")
+
+
+def test_r6_boleto_ilegivel_ou_com_terceiro_valor_escala():
+    c = conf("divergente", ["valor_titulo"], D("837.08"), D("4.50"))
+    sem = decidir(fatos(pagamento=pag("841.58", forma="boleto"), conferencia=c, valor_boleto=None))
+    assert sem.regra_aplicada == "R6_boleto_sem_valor" and sem.fallback_no_corte is Acao.RETIRAR and Acao.CORRIGIR not in acoes(sem)
+    outro = decidir(fatos(pagamento=pag("841.58", forma="boleto"), conferencia=c, valor_boleto=D("999.99")))
+    assert outro.regra_aplicada == "R6_causa_nao_unica" and Acao.CORRIGIR not in acoes(outro)
+
+
+def test_r6_ted_com_diferenca_pequena_continua_corrigindo():
+    c = conf("divergente", ["valor_titulo"], D("837.08"), D("4.50"))
+    assert acoes(decidir(fatos(pagamento=pag("841.58", forma="ted"), conferencia=c))) == [Acao.CORRIGIR]
+
+
+def test_valor_do_boleto_le_a_linha_digitavel():
+    from sentinela.decision import valor_do_boleto
+
+    assert valor_do_boleto("28995217401010503090100000967141715440002124941") == D("21249.41")
+    assert valor_do_boleto("123") is None and valor_do_boleto(None) is None
+
+
 def test_r6_vencimento_unica_causa_corrige():
     d = decidir(fatos(conferencia=conf("divergente", ["vencimento"], venc=date(2026, 11, 10))))
     assert d.acoes[0].parametros["campo"] == "vencimento" and d.acoes[0].parametros["valor_novo"] == "2026-11-10"

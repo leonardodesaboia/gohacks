@@ -28,7 +28,7 @@ from .clock import SimClock
 from .comms.extractor import ExtratorComunicacao
 from .comms.risk import AnaliseRisco, analisar
 from .contracts import Acao, AcaoPlanejada, Decisao, Evidencia, Pagamento
-from .decision import FatosConferencia, FatosTitulo, alteracao_recente, chave_fracionamento, chave_idempotencia, decidir, decidir_comunicacao, indice_agregados
+from .decision import FatosConferencia, FatosTitulo, alteracao_recente, chave_fracionamento, chave_idempotencia, decidir, decidir_comunicacao, indice_agregados, valor_do_boleto
 from .gateway import ToolGateway
 from .identity import Catalogo, ResolucaoTitulo, montar_catalogo, resolver_titulo, vincular_comunicacao
 
@@ -81,6 +81,10 @@ class ExecutorEmMemoria:
         self.gw = gateway
         self._feitas: set[str] = set()
         self._alertas: set[tuple[str, str]] = set()
+        self._solicitados: dict[tuple[str, str], set[str]] = {}
+
+    def ja_solicitados(self, incidente: str, acao_nome: str) -> set[str]:
+        return set(self._solicitados.get((incidente, acao_nome), set()))
 
     @staticmethod
     def _parametros(a: AcaoPlanejada) -> dict[str, Any]:
@@ -117,7 +121,10 @@ class ExecutorEmMemoria:
             acao=Acao.SOLICITAR_APROVACAO,
             parametros={"acao": acao_nome, "parametros": {"incidente": incidente, "itens": itens}, "evidencias": evidencias, "aprovador_humano": aprovador},
         )
-        return self._chamar(instante, incidente, a, chave, None)
+        execucao = self._chamar(instante, incidente, a, chave, None)
+        if execucao.resultado != "erro":
+            self._solicitados.setdefault((incidente, acao_nome), set()).update(i["titulo_id"] for i in itens)
+        return execucao
 
     def executar(self, decisao: Decisao, referencia: str, instante: datetime, ignorar: frozenset[int] = frozenset(), fornecedor_id: str | None = None) -> list[Execucao]:
         saida = []
@@ -168,6 +175,17 @@ class ExecutorPersistente:
 
         self.gw, self.store = gateway, store
         self._exec = Executor(gateway, store, verificar or verificar_titulo)
+
+    def ja_solicitados(self, incidente: str, acao_nome: str) -> set[str]:
+        """Títulos já incluídos em solicitações deste incidente, lidos do Store (vale após reiniciar)."""
+        import json
+
+        prefixo = f"incidente:{incidente}:{acao_nome}:"
+        ids: set[str] = set()
+        for (payload,) in self.store.db.execute("SELECT payload FROM decisoes WHERE substr(titulo_id, 1, ?) = ?", (len(prefixo), prefixo)):
+            for a in json.loads(payload).get("acoes", []):
+                ids.update(i["titulo_id"] for i in a.get("parametros", {}).get("parametros", {}).get("itens", []))
+        return ids
 
     def versao(self, titulo_id: str, fingerprint: Any, instante: datetime) -> int:
         from .store import hash_payload
@@ -303,10 +321,11 @@ class Laco:
         agregado = agregados.get(chave_fracionamento(t))
         aprovado = bool(t["aprovado_por"])
         alvo = self.lote_alvo(t) if self.lote_alvo else None
+        valor_boleto = valor_do_boleto(t["linha_digitavel"]) if t["forma_pagamento"] == "boleto" else None
         # tudo que alimenta `decidir`, só com primitivos: mesma decisão <=> mesmo fingerprint (o Store recusa decisões
         # diferentes para a mesma versão de evidências)
         fingerprint = (
-            t["status"], lote or "", lote_aberto, str(t["valor"]), t["vencimento"], t["forma_pagamento"], t["numero_nf_digitado"], str(agregado), aprovado, alvo or "",
+            t["status"], lote or "", lote_aberto, str(valor_boleto), str(t["valor"]), t["vencimento"], t["forma_pagamento"], t["numero_nf_digitado"], str(agregado), aprovado, alvo or "",
             identidade.status.value, tuple(identidade.motivos), conferencia.resultado, tuple(conferencia.inconsistencias), conferencia.motivo,
             str(conferencia.valor_esperado), str(conferencia.diferenca), str(conferencia.vencimento_esperado), conferencia.chave_acesso,
             tuple(sorted((r.comunicacao_id, r.nivel.value, tuple(s.value for s in r.sinais), r.numero_nf or "", r.afeta_destino_cadastral, r.afeta_boleto) for r in riscos)), recente,
@@ -325,6 +344,7 @@ class Laco:
             aprovacao_registrada=aprovado,
             lote_aberto=lote_aberto,
             lote_alvo=alvo,
+            valor_boleto=valor_boleto,
             versao_evidencias=self._versao(t["titulo_id"], fingerprint),
         )
 
@@ -404,7 +424,12 @@ class Laco:
             if pre_fechamento and d.fallback_no_corte is Acao.RETIRAR and t["status"] == "agendado" and t["lote_remessa"] == lote_id:
                 reg.execucoes.append(self.executor.executar_fallback(tid, d, agora, fornecedor_id=t["fornecedor_id"]))
         for (incidente, acao_nome), g in self._grupos.items():
-            reg.execucoes.append(self.executor.solicitar_agrupado(incidente, acao_nome, g["itens"], g["evidencias"], g["aprovador"], agora, fornecedor_id=incidente.split("|")[0]))
+            anteriores = self.executor.ja_solicitados(incidente, acao_nome)
+            novos = [i for i in g["itens"] if i["titulo_id"] not in anteriores]
+            if not novos:  # reavaliação (ex.: pré-fechamento) de títulos já cobertos por uma solicitação anterior
+                reg.execucoes.append(Execucao(agora, incidente, Acao.SOLICITAR_APROVACAO, {"acao": acao_nome, "titulos": [i["titulo_id"] for i in g["itens"]]}, "duplicada", "títulos já incluídos em solicitação anterior do incidente"))
+                continue
+            reg.execucoes.append(self.executor.solicitar_agrupado(incidente, acao_nome, novos, g["evidencias"], g["aprovador"], agora, fornecedor_id=incidente.split("|")[0]))
         self._grupos.clear()
         return reg
 

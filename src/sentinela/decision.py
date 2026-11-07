@@ -32,6 +32,9 @@ from .identity import ResolucaoTitulo, Status
 
 ALCADA_ANALISTA = Decimal("5000")
 ALCADA_APROVADOR = Decimal("50000")
+# excesso de boleto só justifica reter o pagamento acima de 1% da duplicata: atrasar um pagamento legítimo
+# (multa, juros e custo de relacionamento) custa mais que pagar alguns reais a mais. Premissa a calibrar.
+LIMITE_EXCESSO_RELATIVO = Decimal("0.01")
 INCONS_OC = frozenset({"nf_acima_oc", "oc_sem_aprovacao", "oc_nf", "contrato_sem_aprovacao"})
 PESSOA_POR_CATEGORIA = {
     "produto": "PS04",
@@ -89,6 +92,7 @@ class FatosTitulo:
     lote_alvo: str | None = None  # lote em que um título aberto limpo pode ser agendado
     antecipacao: bool = False
     duplicidade_de: str | None = None  # titulo_id do original, quando a duplicidade está comprovada
+    valor_boleto: Decimal | None = None  # valor impresso no boleto (linha digitável); só para forma "boleto"
     versao_evidencias: int = 0
 
 
@@ -104,6 +108,12 @@ def nivel_aprovacao(valor: Decimal) -> str:
 
 def pessoa_por_categoria(categoria: str) -> str:
     return PESSOA_POR_CATEGORIA.get(categoria, "PS01")
+
+
+def valor_do_boleto(linha_digitavel: str | None) -> Decimal | None:
+    """Valor do boleto: posições 38 a 47 da linha digitável (47 dígitos), em centavos (dicionário de dados)."""
+    d = re.sub(r"\D", "", linha_digitavel or "")
+    return Decimal(d[-10:]) / 100 if len(d) == 47 else None
 
 
 def _numero_nf(digitado: str | None) -> str:
@@ -294,6 +304,22 @@ def decidir(f: FatosTitulo) -> Decisao:
     if conf.resultado == "divergente":
         evid = [f"chave {conf.chave_acesso}: " + (conf.motivo or "divergência")]
         if incons == {"valor_titulo"} and conf.valor_esperado is not None and conf.diferenca is not None:
+            if (p.forma_pagamento or "").lower() == "boleto":
+                # boleto é pago pelo valor impresso nele: corrigir o título só ajuda se o boleto bate com a duplicata
+                vb, tol = f.valor_boleto, Decimal("0.10")
+                pessoa = pessoa_por_categoria(f.categoria)
+                if vb is None:
+                    return dec("R6_boleto_sem_valor", [_acionar(pessoa, f"não foi possível ler o valor do boleto do título {tid}", tid)], "valor do boleto ilegível: nada é corrigido nem pago às cegas", pessoa=pessoa, fallback=Acao.RETIRAR if no_lote_aberto else None, incidente=f"{forn}|boleto_valor")
+                if abs(vb - conf.valor_esperado) > tol:
+                    if abs(vb - valor) <= tol:
+                        excesso = conf.diferenca > 0
+                        material = excesso and conf.diferenca > conf.valor_esperado * LIMITE_EXCESSO_RELATIVO
+                        acoes = ([_retirar(tid, f"boleto e título {_brl(valor)} acima da duplicata {_brl(conf.valor_esperado)}")] if (material and no_lote_aberto) else []) + [
+                            _acionar(pessoa, f"boleto emitido com {_brl(vb)}, diferente da duplicata {_brl(conf.valor_esperado)} (tarifa ou erro do fornecedor) no título {tid}", tid)
+                        ]
+                        return dec("R6_boleto_diverge_da_duplicata", acoes, f"o boleto cobra {_brl(vb)} e a duplicata é {_brl(conf.valor_esperado)}: corrigir o título não resolve; decisão do comprador" + ("; excesso material, retirado do lote" if (material and no_lote_aberto) else "; diferença pequena, não retém o pagamento"), pessoa=pessoa, incidente=f"{forn}|boleto_valor")
+                    return dec("R6_causa_nao_unica", [_acionar(pessoa, f"título, boleto e duplicata com três valores diferentes no título {tid}", tid)], "boleto não bate nem com o título nem com a duplicata: decisão humana", pessoa=pessoa, fallback=Acao.RETIRAR if no_lote_aberto else None, incidente=f"{forn}|divergencia")
+                # boleto == duplicata: o título está errado e o boleto certo; segue para a correção abaixo
             if abs(conf.diferenca) <= ALCADA_ANALISTA:
                 return dec(
                     "R6_corrigir_valor",

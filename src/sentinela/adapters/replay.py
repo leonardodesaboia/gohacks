@@ -92,6 +92,10 @@ class ReplayAdapter:
         self._fornecedores = {r["fornecedor_id"]: r for r in _ler(str(d / "fornecedores.csv"))}
         self._ocs = {r["oc_id"]: r for r in _ler(str(d / "pedidos_compra.csv"))}
         self._nfs = {r["chave_acesso"]: r for r in _ler(str(d / "notas_fiscais.csv"))}
+        self._nf_por_cnpj_numero: dict[tuple[str, str], list[str]] = {}
+        for k, b in self._nfs.items():
+            numero = re.sub(r"\D", "", b["numero_nf"]).lstrip("0") or "0"
+            self._nf_por_cnpj_numero.setdefault((_digitos(b["cnpj_emitente"]), numero), []).append(k)
         self._duplicatas: dict[str, list[dict[str, str]]] = {}
         for r in _ler(str(d / "nf_duplicatas.csv")):
             self._duplicatas.setdefault(r["chave_acesso"], []).append(r)
@@ -354,10 +358,9 @@ class ReplayAdapter:
                 raise NaoEncontrado(f"NF {chave_acesso} não encontrada")
             return v
         if cnpj_emitente and numero_nf:
-            alvo = _digitos(cnpj_emitente)
-            achados = [
-                v for k, b in self._nfs.items() if _digitos(b["cnpj_emitente"]) == alvo and b["numero_nf"] == numero_nf and (v := self._nf_em(k))
-            ]
+            numero = re.sub(r"\D", "", str(numero_nf)).lstrip("0") or "0"
+            chaves = self._nf_por_cnpj_numero.get((_digitos(cnpj_emitente), numero), [])
+            achados = [v for k in chaves if (v := self._nf_em(k))]
             if not achados:
                 raise NaoEncontrado(f"NF {numero_nf} do emitente {cnpj_emitente} não encontrada")
             return achados
