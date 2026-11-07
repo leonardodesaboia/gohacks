@@ -82,6 +82,16 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Comunicações (246):** 241 vêm do e-mail cadastrado do fornecedor. Os 5 que não conferem são exatamente os suspeitos: EM571119 (Embalarte, vincula por CNPJ e nome, remetente `embalartte`), EM571116 (Pigmentos, `outlook.com`, só evidência de nome → ambíguo) e três impersonações de não-fornecedores (EM570977 falsa Receita, EM570998 falso cartório, EM571100 falso Banco Meridiano → sem vínculo).
 - **O vínculo é por sinais explícitos** (e-mail exato 4 pts, domínio 3, CNPJ no texto 3, nome 1; ≥3 e único = ok). `remetente_confere` é o sinal determinístico que a T5 usa.
 
+## Achados da T5 (comunicações; extrator mock + risco, medido nas 246 mensagens no corte)
+
+- **Distribuição por tipo (mock):** 196 envio de boleto/NF, 14 cobrança, 13 segunda via, 5 troca bancária, 15 outros (reajuste, pagamento não identificado, duplicidade, programação), 1 phishing, 1 ameaça de protesto, 1 token.
+- **Ancoragem:** 0 problemas nas 246 (todo trecho, valor, conta e data extraído existe literalmente na mensagem).
+- **Risco (246 mensagens):** 236 sem alerta, 5 em atenção, **exatamente 5 de nível alto** (antes de tratar a 2ª via como informativa eram 224 / 17 / 5): EM571119 (Embalarte), EM571116 (2ª via com beneficiário trocado), EM570977/EM570998/EM571100 (falsa Receita, falso cartório, falso Banco Meridiano; sem vínculo com fornecedor; PS08, e PS02 quando diz ser banco pagador).
+- **Troca bancária por remetente legítimo (4):** EM570891 (Cartonart FP5079), EM570954 (Polyfilm FP3614), EM570976 (Evoluir FP4202), EM571033 (Magnetec FP3345). Remetente confere e **o cadastro já contém o banco anunciado**. Nível atenção + `requer_confirmacao_cadastro` (a confirmação por telefone anterior não é verificável pelo analista). **Observação a verificar, sem concluir nada:** FP5079 e FP3614 são justamente dois dos fornecedores dos títulos com OC de outro fornecedor (TP431946, TP432337).
+- **2ª via legítima (12 de 13)** com remetente e beneficiário corretos: `segunda_via_boleto` é sinal informativo e não gera atenção sozinho (o ajuste evitou ~12 acionamentos de R$ 60).
+- **Instrução plantada em texto de terceiro** (ex.: EM570996, e o trecho dirigido ao "robô" em EM571119): a extração registra em `tentativas_de_instrucao`, o risco sobe para atenção/alto conforme o contexto e **nenhuma decisão muda por causa do texto**. `AnaliseRisco` não tem campo de ação.
+- **IA real não foi exercitada**: sem `ANTHROPIC_API_KEY` neste ambiente. `ExtratorClaude` foi testado com cliente falso (resposta válida, alucinação, falha de rede, sem tool_use, enum inválido, fechamento de tag). Falta uma execução com a API real antes de afirmar "funciona com Claude".
+
 ## Métricas — SUSPENSAS, reproduzir antes de usar
 
 Não existe número validado. Valores abaixo vêm de auditorias anteriores **não reproduzidas** e **não podem** aparecer em código, UI, slides ou submissão:

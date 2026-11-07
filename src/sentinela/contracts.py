@@ -48,6 +48,7 @@ class TipoPedido(StrEnum):
     ENVIO_BOLETO_NF = "envio_boleto_nf"
     AMEACA_PROTESTO = "ameaca_protesto_ou_cobranca_agressiva"
     SOLICITACAO_TOKEN = "solicitacao_seguranca_token"
+    PHISHING = "phishing_ou_arquivo_suspeito"
     OUTRO = "outro"
 
 
