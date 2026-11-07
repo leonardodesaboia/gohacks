@@ -101,6 +101,7 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Aprovação acima da alçada:** títulos agendados >R$ 5.000 não trazem `aprovado_por` no cadastro (só os pagos trazem). Pedir aprovação deles seria ~1.500 pedidos de ruído; o agente só pede aprovação do que **ele mesmo** agendaria.
 - **Replay retroativo (29/10):** às 14:00 e 15:00 a mensagem do Embalarte (15:42) não existe; no tique das 16:00 ela aparece e os 25 títulos TED em lote aberto são retirados antes do primeiro corte desses títulos.
 - **Pré-fechamento:** roda no último tique anterior ao corte (09:00 para o lote das 10:00; 13:00 para o das 14:00), só em dia útil (02/11 é feriado: o primeiro é 03/11 09:00). Uma pendência sem resolução é retirada ali, e não antes.
+- **Integração T8↔T9 (laço + Store + Executor), replay retroativo de 29/10, escopo FP4615:** 28 retiradas **confirmadas pelo estado do ambiente** (`consultar_titulo`), 6 acionamentos verificados, 61 acionamentos de títulos reservados e não reenviados por pertencerem a incidente já alertado, nenhuma ação `incerta` ou `falha`. Reiniciar o laço sobre o mesmo banco executa **zero** ações novas. Com o verificador padrão (sem `verificador_replay`), acionar e solicitar ficam `incerta` e **não são reenviados**, que é o comportamento correto sem prova.
 - **Não existe `AprovacaoRecebida`:** o ambiente simulado não devolve aprovações, então o laço nunca vê uma pendência ser resolvida; toda pendência com `fallback_no_corte` é executada no pré-fechamento.
 
 ## Métricas — SUSPENSAS, reproduzir antes de usar

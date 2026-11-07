@@ -21,16 +21,19 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .adapters.replay import AcaoRecusada, NaoEncontrado
 from .clock import SimClock
 from .comms.extractor import ExtratorComunicacao
 from .comms.risk import AnaliseRisco, analisar
-from .contracts import Acao, AcaoPlanejada, Decisao, Pagamento
-from .decision import FatosConferencia, FatosTitulo, alteracao_recente, chave_fracionamento, decidir, decidir_comunicacao, indice_agregados
+from .contracts import Acao, AcaoPlanejada, Decisao, Evidencia, Pagamento
+from .decision import FatosConferencia, FatosTitulo, alteracao_recente, chave_fracionamento, chave_idempotencia, decidir, decidir_comunicacao, indice_agregados
 from .gateway import ToolGateway
 from .identity import Catalogo, ResolucaoTitulo, montar_catalogo, resolver_titulo, vincular_comunicacao
+
+if TYPE_CHECKING:  # store/executor (T7/T9) só são importados ao usar o ExecutorPersistente
+    from .store import Store
 
 Conferir = Callable[[Mapping[str, Any], ToolGateway, ResolucaoTitulo, "Mapping[str, Any] | None"], FatosConferencia]
 
@@ -106,7 +109,7 @@ class ExecutorEmMemoria:
             self._alertas.add(incidente_pessoa)
         return Execucao(instante, referencia, a.acao, params, "ok")
 
-    def solicitar_agrupado(self, incidente: str, acao_nome: str, itens: list[dict[str, Any]], evidencias: list[str], aprovador: str, instante: datetime) -> Execucao:
+    def solicitar_agrupado(self, incidente: str, acao_nome: str, itens: list[dict[str, Any]], evidencias: list[str], aprovador: str, instante: datetime, fornecedor_id: str | None = None) -> Execucao:
         """Uma única solicitação de aprovação por incidente, com todos os títulos (o humano decide de uma vez)."""
         itens = sorted(itens, key=lambda i: i["titulo_id"])
         chave = f"sol|{incidente}|{acao_nome}|{','.join(i['titulo_id'] for i in itens)}"
@@ -116,7 +119,7 @@ class ExecutorEmMemoria:
         )
         return self._chamar(instante, incidente, a, chave, None)
 
-    def executar(self, decisao: Decisao, referencia: str, instante: datetime, ignorar: frozenset[int] = frozenset()) -> list[Execucao]:
+    def executar(self, decisao: Decisao, referencia: str, instante: datetime, ignorar: frozenset[int] = frozenset(), fornecedor_id: str | None = None) -> list[Execucao]:
         saida = []
         for i, a in enumerate(decisao.acoes):
             if i in ignorar:
@@ -125,9 +128,109 @@ class ExecutorEmMemoria:
             saida.append(self._chamar(instante, referencia, a, f"{decisao.chave_idempotencia}:{i}", ip))
         return saida
 
-    def executar_fallback(self, titulo_id: str, decisao: Decisao, instante: datetime) -> Execucao:
+    def executar_fallback(self, titulo_id: str, decisao: Decisao, instante: datetime, fornecedor_id: str | None = None) -> Execucao:
         a = AcaoPlanejada(acao=Acao.RETIRAR, parametros={"titulo_id": titulo_id, "motivo": f"pré-fechamento: pendência não resolvida ({decisao.regra_aplicada})"})
         return self._chamar(instante, titulo_id, a, f"{decisao.chave_idempotencia}:fallback", None)
+
+
+# ------------------------------------------------------------ executor persistente
+INSTANTE_FINGERPRINT = datetime(2000, 1, 1)  # a evidência de versão é só o fingerprint: sem relevância temporal
+
+
+def verificador_replay(adapter: Any):
+    """Verificador para o ReplayAdapter: título pelo gateway (como em `verificar_titulo`); acionar/solicitar
+    pelo estado simulado do ambiente. Só vale no replay: no ambiente real não há ferramenta que liste isso,
+    e ali o resultado dessas ações permanece incerto (comportamento correto do Executor)."""
+    from .executor import verificar_titulo
+
+    def verificar(acao: AcaoPlanejada, gateway: ToolGateway, resposta: Any) -> bool | None:
+        p = acao.parametros
+        if acao.acao is Acao.ACIONAR_PESSOA:
+            return any(a["pessoa_id"] == p["pessoa_id"] and a["motivo"] == p["motivo"] for a in adapter.acionamentos)
+        if acao.acao is Acao.SOLICITAR_APROVACAO:
+            return any(s["acao"] == p["acao"] and s["parametros"] == p["parametros"] for s in adapter.solicitacoes)
+        return verificar_titulo(acao, gateway, resposta)
+
+    return verificar
+
+
+class ExecutorPersistente:
+    """Adaptador do `Executor` da T9 (Store + verificação de estado) à interface que o laço usa.
+
+    - A versão de evidências vem do Store: cada mudança de fingerprint registra uma evidência e sobe a versão.
+    - O plano executável de cada decisão é persistido; pedidos de aprovação agrupados e fallbacks do
+      pré-fechamento são decisões sintéticas com referência própria (auditáveis e idempotentes).
+    - Resultado incerto ou conflito de idempotência escala; nada é repetido às cegas.
+    """
+
+    def __init__(self, gateway: ToolGateway, store: Store, verificar: Any | None = None) -> None:
+        from .executor import Executor, verificar_titulo
+
+        self.gw, self.store = gateway, store
+        self._exec = Executor(gateway, store, verificar or verificar_titulo)
+
+    def versao(self, titulo_id: str, fingerprint: Any, instante: datetime) -> int:
+        from .store import hash_payload
+
+        digest = hash_payload(fingerprint)
+        ev = Evidencia(fonte="laco", registro=titulo_id, trecho=f"fingerprint:{digest}", instante_disponibilidade=INSTANTE_FINGERPRINT, metodo_extracao="fingerprint")
+        return self.store.registrar_evidencia(titulo_id, f"{titulo_id}:{digest[:20]}", ev)
+
+    def _rodar(self, plano: Decisao, referencia: str, fornecedor_id: str, instante: datetime, acoes: tuple[AcaoPlanejada, ...]) -> list[Execucao]:
+        from .store import ConflitoIdempotencia, chave_acao
+
+        antes = []
+        for a in acoes:
+            params = type(self._exec)._parametros(a)
+            antes.append((params, self.store.obter_acao(chave_acao(referencia, a.acao.value, params, plano.versao_evidencias))))
+        try:
+            res = self._exec.executar(referencia, fornecedor_id, plano)
+        except ConflitoIdempotencia as exc:  # fail-closed: nunca derruba o laço nem repete
+            return [Execucao(instante, referencia, a.acao, p, "escalada", f"ConflitoIdempotencia: {exc}") for a, (p, _) in zip(acoes, antes)] or [
+                Execucao(instante, referencia, Acao.ESCALAR, {}, "escalada", f"ConflitoIdempotencia: {exc}")
+            ]
+        saida: list[Execucao] = []
+        for i, a in enumerate(acoes):
+            params, previa = antes[i]
+            if previa is not None and previa.estado == "aplicada":
+                resultado, detalhe = "duplicada", "ação já aplicada para esta versão de evidências"
+            elif i >= len(res.chaves):
+                resultado, detalhe = "nao_executada", res.motivo
+            elif res.estado == "duplicado" and i == len(res.chaves) - 1:
+                resultado, detalhe = "duplicada", res.motivo
+            else:
+                estado = self.store.obter_acao(res.chaves[i]).estado
+                resultado = {"aplicada": "ok", "falha": "recusada", "incerta": "incerta"}.get(estado, "escalada")
+                detalhe = None if resultado == "ok" else res.motivo
+            saida.append(Execucao(instante, referencia, a.acao, params, resultado, detalhe))
+        return saida
+
+    def executar(self, decisao: Decisao, referencia: str, instante: datetime, ignorar: frozenset[int] = frozenset(), fornecedor_id: str | None = None) -> list[Execucao]:
+        acoes = tuple(a for i, a in enumerate(decisao.acoes) if i not in ignorar)
+        # a decisão completa fica na auditoria; o plano executável (sem o que sai agrupado) é o que se persiste e executa
+        self.store.auditar("decisao_completa", referencia, {"regra": decisao.regra_aplicada, "motivo": decisao.motivo, "acoes": [a.acao.value for a in decisao.acoes], "chave": decisao.chave_idempotencia}, instante)
+        plano = decisao.model_copy(update={"acoes": acoes, "acao": acoes[0].acao if acoes else (Acao.MANTER if decisao.acao not in (Acao.MANTER, Acao.ESCALAR) else decisao.acao), "chave_idempotencia": chave_idempotencia(referencia, acoes, decisao.versao_evidencias)})
+        return self._rodar(plano, referencia, fornecedor_id or "sem_vinculo", instante, acoes)
+
+    def _sintetica(self, referencia: str, regra: str, acao: AcaoPlanejada, motivo: str, fornecedor_id: str, instante: datetime) -> Execucao:
+        acoes = (acao,)
+        plano = Decisao(acao=acao.acao, regra_aplicada=regra, alcada="n/a", versao_evidencias=0, chave_idempotencia=chave_idempotencia(referencia, acoes, 0), motivo=motivo, acoes=acoes)
+        return self._rodar(plano, referencia, fornecedor_id, instante, acoes)[0]
+
+    def executar_fallback(self, titulo_id: str, decisao: Decisao, instante: datetime, fornecedor_id: str | None = None) -> Execucao:
+        a = AcaoPlanejada(acao=Acao.RETIRAR, parametros={"titulo_id": titulo_id, "motivo": f"pré-fechamento: pendência não resolvida ({decisao.regra_aplicada})"})
+        return self._sintetica(f"{titulo_id}#fallback:{decisao.chave_idempotencia[:10]}", "FALLBACK_pre_fechamento", a, a.parametros["motivo"], fornecedor_id or "sem_vinculo", instante)
+
+    def solicitar_agrupado(self, incidente: str, acao_nome: str, itens: list[dict[str, Any]], evidencias: list[str], aprovador: str, instante: datetime, fornecedor_id: str | None = None) -> Execucao:
+        from .store import hash_payload
+
+        itens = sorted(itens, key=lambda i: i["titulo_id"])
+        conjunto = hash_payload([i["titulo_id"] for i in itens])[:12]  # outro conjunto de títulos = outra solicitação
+        a = AcaoPlanejada(
+            acao=Acao.SOLICITAR_APROVACAO,
+            parametros={"acao": acao_nome, "parametros": {"incidente": incidente, "itens": itens}, "evidencias": evidencias, "aprovador_humano": aprovador},
+        )
+        return self._sintetica(f"incidente:{incidente}:{acao_nome}:{conjunto}", "AGRUPADA_solicitacao_aprovacao", a, f"aprovação agrupada do incidente {incidente}", fornecedor_id or incidente.split("|")[0], instante)
 
 
 # ------------------------------------------------------------------ laço
@@ -142,7 +245,7 @@ class Laco:
         *,
         fornecedores: Iterable[str] | None = None,
         lote_alvo: Callable[[Mapping[str, Any]], str | None] | None = None,
-        executor: ExecutorEmMemoria | None = None,
+        executor: ExecutorEmMemoria | ExecutorPersistente | None = None,
     ) -> None:
         self.adapter, self.gw, self.clock, self.extrator, self.conferir = adapter, gateway, clock, extrator, conferir
         self.escopo = set(fornecedores) if fornecedores is not None else None
@@ -176,6 +279,8 @@ class Laco:
         return por_fornecedor, por_comunicacao
 
     def _versao(self, titulo_id: str, fingerprint: Any) -> int:
+        if hasattr(self.executor, "versao"):  # executor persistente: o Store é dono da versão de evidências
+            return self.executor.versao(titulo_id, fingerprint, self.clock.agora)
         anterior = self._versoes.get(titulo_id)
         versao = 0 if anterior is None else anterior[1] + (anterior[0] != fingerprint)
         self._versoes[titulo_id] = (fingerprint, versao)
@@ -195,9 +300,16 @@ class Laco:
         recente = alteracao_recente(cadastros[t["fornecedor_id"]], self.clock.agora) if t["fornecedor_id"] in cadastros else False
         lote = t["lote_remessa"] or None
         lote_aberto = lote is None or not self.clock.lote_fechado(lote)
+        agregado = agregados.get(chave_fracionamento(t))
+        aprovado = bool(t["aprovado_por"])
+        alvo = self.lote_alvo(t) if self.lote_alvo else None
+        # tudo que alimenta `decidir`, só com primitivos: mesma decisão <=> mesmo fingerprint (o Store recusa decisões
+        # diferentes para a mesma versão de evidências)
         fingerprint = (
-            t["status"], lote, lote_aberto, identidade.status, identidade.motivos, conferencia.resultado, conferencia.inconsistencias,
-            tuple(sorted((r.comunicacao_id, r.nivel.value, tuple(s.value for s in r.sinais)) for r in riscos)), recente,
+            t["status"], lote or "", lote_aberto, str(t["valor"]), t["vencimento"], t["forma_pagamento"], t["numero_nf_digitado"], str(agregado), aprovado, alvo or "",
+            identidade.status.value, tuple(identidade.motivos), conferencia.resultado, tuple(conferencia.inconsistencias), conferencia.motivo,
+            str(conferencia.valor_esperado), str(conferencia.diferenca), str(conferencia.vencimento_esperado), conferencia.chave_acesso,
+            tuple(sorted((r.comunicacao_id, r.nivel.value, tuple(s.value for s in r.sinais), r.numero_nf or "", r.afeta_destino_cadastral, r.afeta_boleto) for r in riscos)), recente,
         )
         return FatosTitulo(
             pagamento=Pagamento(
@@ -209,10 +321,10 @@ class Laco:
             conferencia=conferencia,
             riscos=riscos,
             alteracao_cadastral_recente=recente,
-            agregado_alcada=agregados.get(chave_fracionamento(t)),
-            aprovacao_registrada=bool(t["aprovado_por"]),
+            agregado_alcada=agregado,
+            aprovacao_registrada=aprovado,
             lote_aberto=lote_aberto,
-            lote_alvo=self.lote_alvo(t) if self.lote_alvo else None,
+            lote_alvo=alvo,
             versao_evidencias=self._versao(t["titulo_id"], fingerprint),
         )
 
@@ -228,7 +340,7 @@ class Laco:
                 g["itens"].append({"titulo_id": tid, **a.parametros["parametros"]})
                 g["evidencias"] += [e for e in a.parametros["evidencias"] if e not in g["evidencias"]]
                 ignorar.add(i)
-        reg.execucoes += self.executor.executar(d, tid, self.clock.agora, frozenset(ignorar))
+        reg.execucoes += self.executor.executar(d, tid, self.clock.agora, frozenset(ignorar), fornecedor_id=t["fornecedor_id"])
         return d
 
     # ---- tique
@@ -255,7 +367,7 @@ class Laco:
             d = decidir_comunicacao(analise, versao_evidencias=0)
             if d is not None:
                 reg.decisoes.append((f"comunicacao:{cid}", d))
-                reg.execucoes += self.executor.executar(d, f"comunicacao:{cid}", agora)
+                reg.execucoes += self.executor.executar(d, f"comunicacao:{cid}", agora, fornecedor_id=analise.fornecedor_id)
 
         for fid, row in cadastros.items():
             marca = row.get("data_ultima_alteracao", "")
@@ -290,9 +402,9 @@ class Laco:
         for tid, t in a_avaliar.items():
             d = self._avaliar(t, agregados, riscos_forn, cadastros, reg)
             if pre_fechamento and d.fallback_no_corte is Acao.RETIRAR and t["status"] == "agendado" and t["lote_remessa"] == lote_id:
-                reg.execucoes.append(self.executor.executar_fallback(tid, d, agora))
+                reg.execucoes.append(self.executor.executar_fallback(tid, d, agora, fornecedor_id=t["fornecedor_id"]))
         for (incidente, acao_nome), g in self._grupos.items():
-            reg.execucoes.append(self.executor.solicitar_agrupado(incidente, acao_nome, g["itens"], g["evidencias"], g["aprovador"], agora))
+            reg.execucoes.append(self.executor.solicitar_agrupado(incidente, acao_nome, g["itens"], g["evidencias"], g["aprovador"], agora, fornecedor_id=incidente.split("|")[0]))
         self._grupos.clear()
         return reg
 
