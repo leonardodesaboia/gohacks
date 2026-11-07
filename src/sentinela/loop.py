@@ -277,6 +277,11 @@ class Laco:
         self._versoes: dict[str, tuple[Any, int]] = {}
         self.ultima_decisao: dict[str, Decisao] = {}
         self._grupos: dict[tuple[str, str], dict[str, Any]] = {}
+        self.ultimas_analises: dict[str, AnaliseRisco] = {}  # comunicação -> análise do último tique (para a tela)
+
+    def extracao_de(self, comunicacao_id: str) -> Any | None:
+        """Extração (IA) já feita para a comunicação; a IA lê cada mensagem uma única vez."""
+        return self._extracoes.get(comunicacao_id)
 
     # ---- leituras do tique
     def _cadastros(self) -> dict[str, Mapping[str, Any]]:
@@ -373,6 +378,7 @@ class Laco:
         cadastros = self._cadastros()
         comunicacoes = self.gw.chamar("listar_comunicacoes")
         riscos_forn, riscos_com = self._riscos(comunicacoes, cadastros)
+        self.ultimas_analises = riscos_com
 
         afetados: set[str] = set()
         for c in comunicacoes:

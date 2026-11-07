@@ -68,3 +68,19 @@ def mascarar_conta(conta: str) -> str:
 def mascarar_pix(chave: str) -> str:
     c = chave.strip()
     return "****…" + c[-5:] if len(c) > 5 else "****"
+
+
+_CNPJ_TEXTO = re.compile(r"\b(\d{2})\.?(\d{3})\.?(\d{3})/?(\d{4})-?(\d{2})\b")
+_CONTA_TEXTO = re.compile(r"(C/C|conta(?: corrente)?)(\s*(?:n[ºo°.]*|:)?\s*)(\d[\d.]*-?\d?)", re.IGNORECASE)
+_LINHA_TEXTO = re.compile(r"\b\d{47}\b")
+_PIX_UUID = re.compile(r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b")
+
+
+def mascarar_texto(texto: str | None) -> str:
+    """Mascara CNPJ, conta, linha digitável e chave Pix (UUID) dentro de texto livre, p.ex. de uma mensagem citada."""
+    if not texto:
+        return ""
+    texto = _LINHA_TEXTO.sub(lambda m: "****…" + m.group(0)[-6:], texto)
+    texto = _CNPJ_TEXTO.sub(lambda m: f"{m.group(1)}.***.***/{m.group(4)}-{m.group(5)}", texto)
+    texto = _CONTA_TEXTO.sub(lambda m: f"{m.group(1)}{m.group(2)}{mascarar_conta(m.group(3))}", texto)
+    return _PIX_UUID.sub(lambda m: mascarar_pix(m.group(0)), texto)

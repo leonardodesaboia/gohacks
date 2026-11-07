@@ -42,7 +42,13 @@ python scripts/validar_claude.py --extrator openai            # casos críticos 
 SENTINELA_EXTRATOR=openai python scripts/rodar_replay.py ...   # roda a demo com o LLM
 ```
 
-Status: **não há tela ainda** (a UI de narração da T10 está pendente); a demo hoje é por linha de comando e relatórios em `reports/`.
+**Tela de narração da demo (Streamlit, visual Gocase):**
+
+```bash
+streamlit run src/sentinela/ui/app.py
+```
+
+Escolha o cenário na barra lateral e use **Executar tique e avançar 1 hora** (ou **Avançar até o pré-fechamento**). A tela mostra, em ordem: o relógio simulado e a contagem até o corte do lote, o que chegou e o que a IA leu (com o trecho citado e o que a regra decidiu), as ações do último tique, o lote antes e depois, e quem foi chamado com o dossiê. Dados sensíveis saem mascarados e todo texto de mensagem é escapado. Sempre rotulada como **REPLAY LOCAL**.
 
 ## Dados
 
