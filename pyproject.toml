@@ -17,6 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
+openai = ["openai>=1.40"]  # extrator por GPT ou provedor compatível (SENTINELA_EXTRATOR=openai)
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -124,7 +124,8 @@ def analisar(
         add(Sinal.AMEACA_DE_PROTESTO, "mensagem ameaça protesto e pede pagamento urgente")
 
     db = extracao.dados_bancarios
-    if db and cadastro_atual is not None:
+    # só vale como pedido de conta se a mensagem pede troca, ou cita conta/Pix (o banco de um boleto anexo é metadado, não pedido)
+    if db and cadastro_atual is not None and (tipo is TipoPedido.TROCA_DADOS_BANCARIOS or db.conta or db.chave_pix):
         igual = _compara_dados(db, cadastro_atual)
         if igual is True:
             add(Sinal.CADASTRO_JA_COINCIDE_COM_PEDIDO, "o cadastro atual já contém os dados bancários pedidos na mensagem")
