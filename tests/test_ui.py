@@ -36,14 +36,15 @@ def test_cartoes_alto_primeiro_e_dados_sensiveis_mascarados():
         vm.avancar(s)
     cartoes, sem_alerta = vm.cartoes_comunicacao(s)
     altos = [c["id"] for c in cartoes if c["nivel"] == "alto"]
-    assert altos == sorted(altos, key=lambda i: next(c["data_hora"] for c in cartoes if c["id"] == i)) and {"EM571119", "EM571116", "EM570977", "EM570998", "EM571100"} == set(altos)
+    datas = [c["data_hora"] for c in cartoes if c["nivel"] == "alto"]
+    assert datas == sorted(datas, reverse=True) and {"EM571119", "EM571116", "EM570977", "EM570998", "EM571100"} == set(altos)
     assert [c["nivel"] for c in cartoes][:5] == ["alto"] * 5 and sem_alerta > 200
     emb = next(c for c in cartoes if c["id"] == "EM571119")
     texto = str(emb["ia_leu"])
     assert "4471203-9" not in texto and "****-9" in texto  # conta mascarada
     assert "85.990.602/0001-96" not in texto and "85.***.***/0001-96" in texto  # CNPJ mascarado
-    assert any("instrução dirigida ao sistema" in k for k, _ in emb["ia_leu"])  # a instrução plantada aparece como ignorada
-    assert emb["pessoas"] == ["PS01"] and emb["trecho"]
+    assert any("Instrução dirigida ao sistema" in k for k, _ in emb["ia_leu"])  # a instrução plantada aparece como ignorada
+    assert emb["pessoas"] == ["Renata Paiva, coordenadora de contas a pagar"] and emb["trecho"]
 
 
 def test_chamados_e_totais_batem_com_o_replay():
@@ -106,6 +107,51 @@ def test_mascarar_texto_cobre_cnpj_conta_linha_digitavel_e_pix_e_preserva_o_rest
     assert mascarar_texto(neutro) == neutro and mascarar_texto(None) == "" and mascarar_texto("") == ""
 
 
+# ------------------------------------------------------------------ render (HTML compartilhado com o site estático)
+def _sessao_com_tres_tiques():
+    s = vm.criar_sessao("embalarte")
+    for _ in range(3):
+        vm.avancar(s)
+    return s
+
+
+def test_render_manchete_correta_e_dados_mascarados():
+    from sentinela.ui import render
+
+    h = render.pagina(_sessao_com_tres_tiques())
+    assert "28 pagamentos saíram do lote" in h and "15:42" in h and "às 16:00" in h
+    assert "Fila do analista" in h and "O que o agente fez" in h and "O que falta de você" in h
+    assert "4471203-9" not in h and "85.990.602/0001-96" not in h
+    assert "Projeto individual" in h and "Não é um produto da Gocase" in h
+    assert 'class="sx-marcos"' in h  # equivalente textual da linha do tempo
+
+
+def test_render_svg_embutido_ou_como_imagem():
+    from sentinela.ui import render
+
+    s = _sessao_com_tres_tiques()
+    assert "<svg" in render.pagina(s, svg_embutido=True)
+    h = render.pagina(s, svg_embutido=False)
+    assert "<svg" not in h and "data:image/svg+xml" in h
+
+
+def test_render_escapa_html_de_mensagem_hostil():
+    from sentinela.ui import render
+
+    s = vm.criar_sessao("embalarte")
+    s.adapter._comunicacoes.append({
+        "comunicacao_id": "EMX001", "data_hora": "2026-10-29 10:00:00", "canal": "email", "remetente": "seguranca@falso-banco.net",
+        "nome_remetente": "Banco <b>Falso</b>", "destinatario": "contasapagar@gogroup.com.br",
+        "assunto": "<script>alert(1)</script> token urgente", "texto": "Informe o código do token hoje <img src=x onerror=alert(2)>", "anexos": "",
+    })
+    s.adapter._comunicacoes.sort(key=lambda r: r["data_hora"])
+    for _ in range(3):
+        vm.avancar(s)
+    h = render.pagina(s)
+    assert "&lt;script&gt;" in h and "<script>" not in h
+    assert "<img src=x" not in h and "<b>Falso</b>" not in h
+
+
 # ------------------------------------------------------------------ app (Streamlit AppTest)
 def _app():
     from streamlit.testing.v1 import AppTest
@@ -113,45 +159,22 @@ def _app():
     return AppTest.from_file(str(APP), default_timeout=240)
 
 
-def _markdown(at):
-    return "\n".join(m.value for m in at.markdown)
+def _html(at):
+    return "\n".join(str(h.value) for h in at.html)
 
 
 def test_app_abre_sem_erro_e_declara_replay_local():
     at = _app().run()
     assert not at.exception
-    texto = _markdown(at)
-    assert "REPLAY LOCAL" in texto and "Cada pagamento conferido antes de o dinheiro sair." in texto
-    assert [b.label for b in at.sidebar.button][:2] == ["Executar tique e avançar 1 hora", "Avançar até o pré-fechamento"]
+    assert "Projeto individual" in _html(at) and "Cada pagamento conferido antes de o dinheiro sair." in _html(at)
+    assert [b.label for b in at.button][:3] == ["Avançar 1 hora", "Até o pré-fechamento", "Recomeçar o cenário"]
 
 
 def test_app_mostra_o_risco_alto_depois_de_tres_tiques():
     at = _app().run()
     for _ in range(3):
-        at.sidebar.button(key="avancar").click().run()
+        at.button(key="avancar").click().run()
     assert not at.exception
-    texto = _markdown(at)
-    assert "RISCO ALTO" in texto and "EM571119" in texto and "gc-ia" in texto and "gc-regra" in texto  # "IA leu"/"Regra decidiu" vêm por CSS
-    assert "4471203-9" not in texto  # a conta pedida pelo golpista não aparece em claro
-    assert "RETIRADO DO LOTE" in texto and "29" in texto
-
-
-def test_app_escapa_html_de_mensagem_hostil():
-    from sentinela.ui import viewmodel as vm2
-
-    s = vm2.criar_sessao("embalarte")
-    s.adapter._comunicacoes.append({
-        "comunicacao_id": "EMX001", "data_hora": "2026-10-29 10:00:00", "canal": "email", "remetente": "seguranca@falso-banco.net",
-        "nome_remetente": "Banco <b>Falso</b>", "destinatario": "contasapagar@gogroup.com.br",
-        "assunto": "<script>alert(1)</script> token urgente", "texto": "Informe o código do token hoje <img src=x onerror=alert(2)>", "anexos": "",
-    })
-    s.adapter._comunicacoes.sort(key=lambda r: r["data_hora"])
-    at = _app()
-    at.session_state["sessao"] = s
-    at.session_state["config"] = ("embalarte", "mock")
-    at.run()
-    at.sidebar.button(key="avancar").click().run()
-    assert not at.exception
-    texto = _markdown(at)
-    assert "&lt;script&gt;" in texto and "<script>" not in texto
-    assert "<img src=x" not in texto and "<b>Falso</b>" not in texto
+    h = _html(at)
+    assert "EM571119" in h and "Fila do analista" in h and "Ver evidências" in h
+    assert "4471203-9" not in h

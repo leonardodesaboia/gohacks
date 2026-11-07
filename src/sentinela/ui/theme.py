@@ -22,14 +22,14 @@ TOKENS: dict[str, str] = {
 
 # decisão -> (classe do selo, rótulo, ícone). Estado nunca depende só de cor.
 COR_DECISAO: dict[str, tuple[str, str, str]] = {
-    "agendar_titulo": ("gc-selo--segue", "SEGUE SOZINHO", "✓"),
-    "manter": ("gc-selo--segue", "SEGUE SOZINHO", "✓"),
-    "corrigir_lancamento": ("gc-selo--corrigido", "CORRIGIDO", "✎"),
-    "retirar_do_lote": ("gc-selo--retirado", "RETIRADO DO LOTE", "⏸"),
-    "acionar_pessoa": ("gc-selo--humano", "CHAMEI ALGUÉM", "✋"),
-    "solicitar_aprovacao": ("gc-selo--humano", "CHAMEI ALGUÉM", "✋"),
-    "escalar": ("gc-selo--degradado", "REVISÃO MANUAL", "⚠"),
-    "cancelar_titulo": ("gc-selo--cancelado", "CANCELADO", "✕"),
+    "agendar_titulo": ("gc-selo--segue", "Segue sozinho", "✓"),
+    "manter": ("gc-selo--segue", "Segue sozinho", "✓"),
+    "corrigir_lancamento": ("gc-selo--corrigido", "Corrigido", "✎"),
+    "retirar_do_lote": ("gc-selo--retirado", "Retirado do lote", "⏸"),
+    "acionar_pessoa": ("gc-selo--humano", "Chamei alguém", "✋"),
+    "solicitar_aprovacao": ("gc-selo--humano", "Chamei alguém", "✋"),
+    "escalar": ("gc-selo--degradado", "Revisão manual", "⚠"),
+    "cancelar_titulo": ("gc-selo--cancelado", "Cancelado", "✕"),
 }
 
 _TOKENS_CSS = Path(__file__).resolve().parents[3] / "assets" / "tokens.css"

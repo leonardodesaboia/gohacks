@@ -15,7 +15,7 @@ Em construção. Plano em [`docs/04-PLANO-DE-BUILD.md`](docs/04-PLANO-DE-BUILD.m
 Python 3.11+. Os CSVs de Pagamentos do evento devem estar em `data/raw/` (não versionados).
 
 ```bash
-python -m venv .venv
+python -m venv .venv 
 .venv/Scripts/activate            # Windows (PowerShell/cmd); no Git Bash: source .venv/Scripts/activate
 pip install -e ".[dev]"           # + pip install openai  se for usar GPT
 set PYTHONUTF8=1                  # Windows: evita erro de acentos no console (PowerShell: $env:PYTHONUTF8=1)
@@ -48,7 +48,16 @@ SENTINELA_EXTRATOR=openai python scripts/rodar_replay.py ...   # roda a demo com
 streamlit run src/sentinela/ui/app.py
 ```
 
-Escolha o cenário na barra lateral e use **Executar tique e avançar 1 hora** (ou **Avançar até o pré-fechamento**). A tela mostra, em ordem: o relógio simulado e a contagem até o corte do lote, o que chegou e o que a IA leu (com o trecho citado e o que a regra decidiu), as ações do último tique, o lote antes e depois, e quem foi chamado com o dossiê. Dados sensíveis saem mascarados e todo texto de mensagem é escapado. Sempre rotulada como **REPLAY LOCAL**.
+Escolha o cenário no topo e use **Avançar 1 hora** (ou **Até o pré-fechamento**). A tela mostra, em ordem: a manchete do que o agente fez e quando, a linha do tempo até o corte, o que chegou e o que a IA leu (com o trecho citado) ao lado do que o código decidiu, o lote antes e depois, e quem foi chamado com o dossiê. Dados sensíveis saem mascarados e todo texto de mensagem é escapado. Sempre declarada como replay local de dados sintéticos.
+
+**Deploy (site estático):** o Streamlit precisa de servidor Python e não roda na Vercel. Para publicar, exporte o replay dos dois cenários como uma página única, sem backend, sem chave de API e sem os CSVs:
+
+```bash
+PYTHONUTF8=1 PYTHONPATH=src python scripts/exportar_site.py   # gera site/index.html e site/vercel.json
+npx vercel --prod site                                         # ou arraste a pasta site/ no Netlify
+```
+
+`site/` é a única pasta publicada. O HTML sai do mesmo `ui/render.py` que alimenta o Streamlit, então os dois nunca divergem. O replay usa dados sintéticos do evento; confira a política do regulamento antes de deixar a URL pública.
 
 ## Dados
 
