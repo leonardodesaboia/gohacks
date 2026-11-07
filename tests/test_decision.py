@@ -31,8 +31,8 @@ LOTE = "RM20261103-MER"
 
 
 # ------------------------------------------------------------------ fábricas
-def pag(valor="1000.00", estado="agendado", lote=LOTE, forn="FP1000", tid="TP1", venc=date(2026, 11, 3)):
-    return Pagamento(id=tid, origem="erp", fornecedor_id=forn, nf_numero="123", parcela="1/1", valor=D(valor), vencimento=venc, estado=estado, lote=lote if estado == "agendado" else None)
+def pag(valor="1000.00", estado="agendado", lote=LOTE, forn="FP1000", tid="TP1", venc=date(2026, 11, 3), forma=None, nf="123"):
+    return Pagamento(id=tid, origem="erp", fornecedor_id=forn, nf_numero=nf, parcela="1/1", valor=D(valor), vencimento=venc, estado=estado, lote=lote if estado == "agendado" else None, forma_pagamento=forma)
 
 
 def ident(status=Status.OK, motivos=(), tid="TP1"):
@@ -43,8 +43,8 @@ def conf(resultado="ok", incons=(), esperado=None, dif=None, venc=None, motivo="
     return FatosConferencia(resultado, tuple(incons), motivo, esperado, dif, venc, "CHAVE")
 
 
-def risco(nivel=Nivel.ALTO, sinais=(Sinal.REMETENTE_NAO_CONFERE,), forn="FP1000", pessoas=("PS01",)):
-    return AnaliseRisco("EM1", forn, Status.OK, False, nivel, tuple(sinais), ("motivo de teste",), nivel is Nivel.ALTO, Sinal.TROCA_BANCARIA_SOLICITADA in sinais, tuple(pessoas))
+def risco(nivel=Nivel.ALTO, sinais=(Sinal.REMETENTE_NAO_CONFERE,), forn="FP1000", pessoas=("PS01",), **extra):
+    return AnaliseRisco("EM1", forn, Status.OK, False, nivel, tuple(sinais), ("motivo de teste",), nivel is Nivel.ALTO, Sinal.TROCA_BANCARIA_SOLICITADA in sinais, tuple(pessoas), **extra)
 
 
 def fatos(**kw):
@@ -90,9 +90,10 @@ def test_r7_acima_da_alcada_com_aprovacao_registrada_agenda():
     assert acoes(d) == [Acao.AGENDAR]
 
 
-def test_r7_agendado_acima_da_alcada_sem_aprovacao_pede_e_tem_fallback():
+def test_r7_agendado_acima_da_alcada_e_mantido_sem_pedir_aprovacao():
+    # entrou no lote por outro fluxo; o agente só confere (pedir aprovação de 1.465 títulos já agendados seria ruído)
     d = decidir(fatos(pagamento=pag("9000.00")))
-    assert acoes(d) == [Acao.SOLICITAR_APROVACAO] and d.fallback_no_corte is Acao.RETIRAR
+    assert d.regra_aplicada == "R7_limpo_manter" and d.acoes == ()
 
 
 def test_fracionamento_soma_por_fornecedor_nf_e_vencimento():
@@ -114,6 +115,22 @@ def test_r1_risco_alto_retira_do_lote_e_aciona_ps01():
     d = decidir(fatos(riscos=(risco(),)))
     assert acoes(d) == [Acao.RETIRAR, Acao.ACIONAR_PESSOA] and d.pessoa_a_acionar == "PS01"
     assert d.acoes[1].parametros["urgencia"] == "alta" and d.incidente == "FP1000|fraude" and d.fallback_no_corte is None
+
+
+def test_risco_de_conta_so_afeta_titulos_por_ted_ou_pix():
+    r = risco(sinais=(Sinal.TROCA_BANCARIA_SOLICITADA, Sinal.REMETENTE_NAO_CONFERE), afeta_destino_cadastral=True)
+    for forma in ("ted", "pix", None):  # forma desconhecida é tratada como afetada (fail-closed)
+        assert Acao.RETIRAR in acoes(decidir(fatos(pagamento=pag(forma=forma), riscos=(r,)))), forma
+    boleto = decidir(fatos(pagamento=pag(forma="boleto"), riscos=(r,)))
+    assert boleto.regra_aplicada == "R7_limpo_manter" and boleto.acoes == ()  # boleto vai para o beneficiário do boleto, não para o cadastro
+
+
+def test_risco_de_boleto_so_afeta_a_nf_citada():
+    r = risco(sinais=(Sinal.BOLETO_BENEFICIARIO_DIVERGENTE, Sinal.SEGUNDA_VIA_BOLETO), afeta_boleto=True, numero_nf="57551")
+    citada = decidir(fatos(pagamento=pag(forma="boleto", nf="0057551"), riscos=(r,)))  # zeros à esquerda não enganam
+    assert acoes(citada) == [Acao.RETIRAR, Acao.ACIONAR_PESSOA]
+    outra = decidir(fatos(pagamento=pag(forma="boleto", nf="99999"), riscos=(r,)))
+    assert outra.regra_aplicada == "R7_limpo_manter"  # os demais títulos legítimos do fornecedor não são retirados
 
 
 def test_r1_titulo_aberto_nao_retira_mas_aciona():
@@ -154,11 +171,11 @@ def test_r3_evidencia_ausente_ou_ambigua_nao_executa():
     assert d.pessoa_a_acionar == "PS01"
 
 
-def test_r4_troca_bancaria_recente_pede_aprovacao_dupla_e_protege_no_corte():
+def test_r4_troca_bancaria_recente_pede_aprovacao_dupla_sem_reter_pagamento():
     r = risco(Nivel.ATENCAO, (Sinal.TROCA_BANCARIA_SOLICITADA, Sinal.CADASTRO_JA_COINCIDE_COM_PEDIDO))
     d = decidir(fatos(riscos=(r,), alteracao_cadastral_recente=True))
     assert d.regra_aplicada == "R4_troca_bancaria_recente" and acoes(d) == [Acao.SOLICITAR_APROVACAO]
-    assert d.aprovacao_necessaria == "dupla: aprovador + PS01" and d.fallback_no_corte is Acao.RETIRAR
+    assert d.aprovacao_necessaria == "dupla: aprovador + PS01" and d.fallback_no_corte is None  # nunca retira: a troca pode estar confirmada
     sem_recente = decidir(fatos(riscos=(r,), alteracao_cadastral_recente=False))
     assert sem_recente.regra_aplicada == "R7_limpo_manter"
 
@@ -339,8 +356,10 @@ def test_alcada_do_agendamento_e_exaustiva_no_caminho_limpo():
             agendamentos += 1
             assert estado == "aberto" and alvo == LOTE and not antecip
             assert total <= D("5000") or aprov
-        if total > D("5000") and not aprov and (estado == "aberto" and alvo or estado == "agendado" or antecip):
+        if estado == "aberto" and alvo and (antecip or (total > D("5000") and not aprov)):
             assert acoes(d) == [Acao.SOLICITAR_APROVACAO]
+        if estado == "agendado":
+            assert acoes(d) == []  # título já agendado e coerente: só conferir
     assert agendamentos > 0
 
 
@@ -365,7 +384,7 @@ def fatos_reais(gw, cat, titulo, riscos=(), conferencia=None):
     oc = gw.chamar("consultar_pedido_compra", oc_id=titulo["oc_id"]) if titulo["oc_id"] else None
     forn = cat.por_id(titulo["fornecedor_id"])
     return FatosTitulo(
-        pagamento=Pagamento(id=titulo["titulo_id"], origem="erp", fornecedor_id=titulo["fornecedor_id"], nf_numero=titulo["numero_nf_digitado"], parcela=titulo["parcela"], valor=titulo["valor"], vencimento=date.fromisoformat(titulo["vencimento"]), estado=titulo["status"], lote=titulo["lote_remessa"] or None),
+        pagamento=Pagamento(id=titulo["titulo_id"], origem="erp", fornecedor_id=titulo["fornecedor_id"], nf_numero=titulo["numero_nf_digitado"], parcela=titulo["parcela"], valor=titulo["valor"], vencimento=date.fromisoformat(titulo["vencimento"]), estado=titulo["status"], lote=titulo["lote_remessa"] or None, forma_pagamento=titulo["forma_pagamento"]),
         categoria=forn.categoria,
         identidade=resolver_titulo(cat, titulo, oc),
         conferencia=conferencia or conf("ok"),  # a conferência 3 vias real é da T4; aqui só identidade e comunicações
@@ -393,10 +412,14 @@ def test_real_embalarte_retira_titulo_agendado_e_compartilha_incidente(real):
     gw, cat, comms = real
     r = analisar_comunicacao(gw, cat, ExtratorMock(), comms["EM571119"])
     agendados = gw.chamar("buscar_titulos", fornecedor_id="FP4615", status="agendado", limite=1000)
-    assert agendados
-    for t in agendados[:10]:
+    por_conta = [t for t in agendados if t["forma_pagamento"] in ("ted", "pix")]
+    por_boleto = [t for t in agendados if t["forma_pagamento"] == "boleto"]
+    assert por_conta
+    for t in por_conta[:10]:
         d = decidir(fatos_reais(gw, cat, t, (r,)))
         assert acoes(d) == [Acao.RETIRAR, Acao.ACIONAR_PESSOA]
+    for t in por_boleto[:10]:  # boleto não usa a conta do cadastro
+        assert acoes(decidir(fatos_reais(gw, cat, t, (r,)))) == []
     assert decidir_comunicacao(r).incidente == d.incidente == "FP4615|fraude"
 
 

@@ -58,6 +58,10 @@ class AnaliseRisco:
     requer_revisao_humana: bool
     requer_confirmacao_cadastro: bool
     pessoas_sugeridas: tuple[str, ...]
+    # o que o risco afeta: o motor só o aplica a títulos relevantes (evita retirar pagamentos legítimos)
+    numero_nf: str | None = None
+    afeta_destino_cadastral: bool = False  # troca/coincidência de conta: vale para pagamentos por TED/PIX
+    afeta_boleto: bool = False  # boleto/2ª via suspeito: vale para a NF citada
 
 
 _BANCOS_PAGADORES = re.compile(r"meridiano|litoral", re.IGNORECASE)
@@ -174,6 +178,9 @@ def analisar(
         requer_revisao_humana=nivel is Nivel.ALTO or Sinal.EXTRACAO_DEGRADADA in s,
         requer_confirmacao_cadastro=Sinal.TROCA_BANCARIA_SOLICITADA in s,
         pessoas_sugeridas=tuple(pessoas),
+        numero_nf=extracao.numero_nf,
+        afeta_destino_cadastral=bool(s & {Sinal.TROCA_BANCARIA_SOLICITADA, Sinal.CADASTRO_JA_COINCIDE_COM_PEDIDO, Sinal.DADOS_DIFEREM_DO_CADASTRO}),
+        afeta_boleto=bool(s & {Sinal.BOLETO_BENEFICIARIO_DIVERGENTE, Sinal.SEGUNDA_VIA_BOLETO}),
     )
 
 

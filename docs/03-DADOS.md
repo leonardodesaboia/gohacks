@@ -92,6 +92,17 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Instrução plantada em texto de terceiro** (ex.: EM570996, e o trecho dirigido ao "robô" em EM571119): a extração registra em `tentativas_de_instrucao`, o risco sobe para atenção/alto conforme o contexto e **nenhuma decisão muda por causa do texto**. `AnaliseRisco` não tem campo de ação.
 - **IA real não foi exercitada**: sem `ANTHROPIC_API_KEY` neste ambiente. `ExtratorClaude` foi testado com cliente falso (resposta válida, alucinação, falha de rede, sem tool_use, enum inválido, fechamento de tag). Falta uma execução com a API real antes de afirmar "funciona com Claude".
 
+## Achados da T8 (laço de eventos; fila inicial completa no corte, conferência 3 vias neutra)
+
+- **Fila inicial** (2.398 títulos abertos/agendados + 246 comunicações) processa em ~1 s. Resultado: **28 títulos retirados do lote** (25 do Embalarte por TED + os 3 divergentes TP431754, TP431946, TP432337), **8 acionamentos** (PS08 ×3 por impersonação, PS02 ×1 pelo falso Banco Meridiano, PS01 ×4) e **4 solicitações de aprovação agrupadas** (131 títulos). Nenhum agendamento, correção ou cancelamento: a conferência de 3 vias real (T4) ainda não está ligada ao laço.
+- **Embalarte (FP4615):** 192 títulos, **todos por TED**: 25 agendados (retirados), 33 abertos, 134 pagos. Como todos usam a conta do cadastro, o risco de troca de conta os afeta todos; um fornecedor com títulos por boleto não seria afetado (boleto vai para o beneficiário do próprio boleto).
+- **Pigmentos Aquarela (FP4345):** só o título da NF 57551 (TP431754) é retirado; os demais títulos legítimos do fornecedor permanecem agendados. O risco de boleto vale para a NF citada, não para o fornecedor inteiro.
+- **Trocas de conta de remetente legítimo (FP3614, FP5079, FP3345, FP4202): as 4 têm confirmação registrada por ligação ao telefone do cadastro.** Só a do FP4615 não tem. O analista **não lê** o histórico (`consultar_historico_cadastro` é de auditor/aprovador), então não consegue distinguir. Por isso a R4 apenas **pede aprovação dupla (agrupada por fornecedor)** e não retira pagamentos no pré-fechamento: retirar 131 títulos legítimos custaria multa, juros e relacionamento (o placar pune atraso).
+- **Aprovação acima da alçada:** títulos agendados >R$ 5.000 não trazem `aprovado_por` no cadastro (só os pagos trazem). Pedir aprovação deles seria ~1.500 pedidos de ruído; o agente só pede aprovação do que **ele mesmo** agendaria.
+- **Replay retroativo (29/10):** às 14:00 e 15:00 a mensagem do Embalarte (15:42) não existe; no tique das 16:00 ela aparece e os 25 títulos TED em lote aberto são retirados antes do primeiro corte desses títulos.
+- **Pré-fechamento:** roda no último tique anterior ao corte (09:00 para o lote das 10:00; 13:00 para o das 14:00), só em dia útil (02/11 é feriado: o primeiro é 03/11 09:00). Uma pendência sem resolução é retirada ali, e não antes.
+- **Não existe `AprovacaoRecebida`:** o ambiente simulado não devolve aprovações, então o laço nunca vê uma pendência ser resolvida; toda pendência com `fallback_no_corte` é executada no pré-fechamento.
+
 ## Métricas — SUSPENSAS, reproduzir antes de usar
 
 Não existe número validado. Valores abaixo vêm de auditorias anteriores **não reproduzidas** e **não podem** aparecer em código, UI, slides ou submissão:

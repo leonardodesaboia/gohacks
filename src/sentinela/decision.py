@@ -111,21 +111,42 @@ def _numero_nf(digitado: str | None) -> str:
     return str(int(m.group(1))) if m else ""
 
 
+def chave_fracionamento(t: Mapping[str, Any]) -> tuple[str, str, str]:
+    return (t["fornecedor_id"], _numero_nf(t.get("numero_nf_digitado")), str(t["vencimento"]))
+
+
+def indice_agregados(todos: Iterable[Mapping[str, Any]]) -> dict[tuple[str, str, str], Decimal]:
+    """Soma por grupo de fracionamento, em uma passada (para avaliar milhares de títulos sem O(n²))."""
+    soma: dict[tuple[str, str, str], Decimal] = {}
+    for t in todos:
+        if t.get("status") in ("aberto", "agendado"):
+            k = chave_fracionamento(t)
+            soma[k] = soma.get(k, Decimal("0")) + Decimal(str(t["valor"]))
+    return soma
+
+
 def agregado_alcada(titulo: Mapping[str, Any], todos: Iterable[Mapping[str, Any]]) -> Decimal:
     """Soma dos títulos abertos/agendados do mesmo fornecedor + NF + vencimento (dia de pagamento).
 
     Interpretação de `alcadas.fracionamento` ("mesmo fornecedor e mesma NF no mesmo dia"): parcelas
     de uma NF com vencimentos diferentes são parcelamento normal e não se somam. Confirmar com a área.
     """
+    return indice_agregados(todos).get(chave_fracionamento(titulo), Decimal("0"))
 
-    def chave(t: Mapping[str, Any]) -> tuple[str, str, str]:
-        return (t["fornecedor_id"], _numero_nf(t.get("numero_nf_digitado")), str(t["vencimento"]))
 
-    alvo = chave(titulo)
-    return sum(
-        (Decimal(str(t["valor"])) for t in todos if chave(t) == alvo and t.get("status") in ("aberto", "agendado")),
-        Decimal("0"),
-    )
+def risco_relevante(r: AnaliseRisco, p: Pagamento) -> bool:
+    """O risco só vale para o título que ele realmente afeta.
+
+    Troca/coincidência de conta afeta pagamentos por TED/PIX (usam o cadastro); boleto ou 2ª via suspeita
+    afeta a NF citada. Sem afirmação específica, vale para todo o fornecedor (conservador). Forma de
+    pagamento desconhecida é tratada como afetada (fail-closed).
+    """
+    if not r.afeta_destino_cadastral and not r.afeta_boleto:
+        return True
+    forma = (p.forma_pagamento or "").lower()
+    if r.afeta_destino_cadastral and forma in ("", "ted", "pix"):
+        return True
+    return bool(r.afeta_boleto and r.numero_nf and _numero_nf(p.nf_numero) == _numero_nf(r.numero_nf))
 
 
 def alteracao_recente(cadastro: Mapping[str, Any], agora: datetime, dias: int = 30) -> bool:
@@ -200,7 +221,7 @@ def decidir(f: FatosTitulo) -> Decisao:
     incons = set(conf.inconsistencias)
     no_lote_aberto = p.estado == "agendado" and bool(p.lote) and f.lote_aberto
     lote_fechado = p.estado == "agendado" and not f.lote_aberto
-    altos = [r for r in f.riscos if r.nivel is Nivel.ALTO]
+    altos = [r for r in f.riscos if r.nivel is Nivel.ALTO and risco_relevante(r, p)]
 
     def dec(regra: str, acoes: list[AcaoPlanejada], motivo: str, **kw: Any) -> Decisao:
         return _montar(tid, versao, regra, acoes, motivo, alcada_txt, **kw)
@@ -250,12 +271,15 @@ def decidir(f: FatosTitulo) -> Decisao:
         return dec("R3_evidencia_ausente_ou_ambigua", acoes, f"evidência {conf.resultado}: {causa}. Nada é executado até um humano resolver", pessoa=pessoa, fallback=Acao.RETIRAR if no_lote_aberto else None, incidente=f"{forn}|evidencia:{conf.resultado}")
 
     # R4: troca bancária pedida, cadastro mexido há ≤30 dias e confirmação não verificável -> aprovação dupla
-    troca = [r for r in f.riscos if Sinal.TROCA_BANCARIA_SOLICITADA in r.sinais]
+    troca = [r for r in f.riscos if Sinal.TROCA_BANCARIA_SOLICITADA in r.sinais and risco_relevante(r, p)]
     if troca and f.alteracao_cadastral_recente:
         aprov = "dupla: aprovador + PS01" if max(valor, agregado) <= ALCADA_APROVADOR else "dupla: aprovador + PS03"
         evid = [f"comunicação {r.comunicacao_id}: " + "; ".join(r.motivos[:2]) for r in troca]
         acoes = [_solicitar(tid, "liberar_pagamento", {"motivo": "fornecedor com troca bancária recente sem confirmação verificável"}, evid, "PS01" if "PS01" in aprov else "PS03")]
-        return dec("R4_troca_bancaria_recente", acoes, "fornecedor pediu troca de conta e o cadastro foi alterado há ≤30 dias; a confirmação por telefone anterior não é verificável pelo analista", aprovacao=aprov, fallback=Acao.RETIRAR if no_lote_aberto else None, incidente=f"{forn}|troca_bancaria")
+        # Sem fallback de retirada de propósito: o analista não lê o histórico, então não vê a confirmação por
+        # telefone. Nos dados, as 4 trocas de remetente legítimo tinham confirmação registrada; retirar 131 títulos
+        # legítimos custaria multa, juros e relacionamento. Quem aprova (aprovador/PS01) consegue verificar.
+        return dec("R4_troca_bancaria_recente", acoes, "fornecedor pediu troca de conta e o cadastro foi alterado há ≤30 dias; a confirmação por telefone anterior não é verificável pelo analista: pedir aprovação a quem lê o histórico", aprovacao=aprov, fallback=None, incidente=f"{forn}|troca_bancaria")
 
     # R5: divergência OC × NF
     if incons & INCONS_OC:
@@ -292,19 +316,19 @@ def decidir(f: FatosTitulo) -> Decisao:
         pessoa = pessoa_por_categoria(f.categoria)
         return dec("R6_causa_nao_unica", [_acionar(pessoa, f"divergências sem causa única no título {tid}: {', '.join(sorted(incons)) or conf.motivo}", tid)], "divergência sem uma única causa comprovável: decisão humana", pessoa=pessoa, fallback=Acao.RETIRAR if no_lote_aberto else None, incidente=f"{forn}|divergencia")
 
-    # R7: caso limpo
-    precisa_aprovacao = max(valor, agregado) > ALCADA_ANALISTA and not f.aprovacao_registrada
-    if f.antecipacao and p.estado == "aberto":
-        precisa_aprovacao = True
-    if precisa_aprovacao:
-        motivo = "antecipação exige aprovação dupla" if f.antecipacao else f"acima da alçada do analista ({_brl(max(valor, agregado))}) sem aprovação registrada"
-        aprov = "dupla: aprovador + PS01" if f.antecipacao else nivel_aprovacao(max(valor, agregado))
-        acoes = [_solicitar(tid, "agendar_titulo", {"lote_remessa": f.lote_alvo or p.lote}, ["conferência de 3 vias ok", "identidade ok"], aprov.split(" + ")[-1] if f.antecipacao else "aprovador")]
-        return dec("R7_limpo_exige_aprovacao", acoes, motivo, aprovacao=aprov, fallback=Acao.RETIRAR if no_lote_aberto else None)
+    # R7: caso limpo. Título já agendado entrou no lote por outro fluxo (a aprovação acima da alçada
+    # é desse fluxo e não consta no cadastro): o agente só confere e mantém. Aprovação só é pedida
+    # para o que o próprio agente liberaria (agendar um título aberto).
     if p.estado == "agendado":
         return dec("R7_limpo_manter", [], "conferido e coerente; permanece agendado")
     if f.lote_alvo is None:
         return dec("R7_limpo_sem_lote", [], "conferido e coerente, mas sem lote alvo definido")
+    total = max(valor, agregado)
+    if f.antecipacao or (total > ALCADA_ANALISTA and not f.aprovacao_registrada):
+        motivo = "antecipação exige aprovação dupla" if f.antecipacao else f"acima da alçada do analista ({_brl(total)}) sem aprovação registrada"
+        aprov = "dupla: aprovador + PS01" if f.antecipacao else nivel_aprovacao(total)
+        acoes = [_solicitar(tid, "agendar_titulo", {"lote_remessa": f.lote_alvo}, ["conferência de 3 vias ok", "identidade ok"], "PS01" if f.antecipacao else "aprovador")]
+        return dec("R7_limpo_exige_aprovacao", acoes, motivo, aprovacao=aprov)
     return dec("R7_limpo_agendar", [AcaoPlanejada(acao=Acao.AGENDAR, parametros={"titulo_id": tid, "lote_remessa": f.lote_alvo})], "conferido e coerente dentro da alçada: agendado automaticamente")
 
 
