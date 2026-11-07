@@ -90,7 +90,7 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Troca bancária por remetente legítimo (4):** EM570891 (Cartonart FP5079), EM570954 (Polyfilm FP3614), EM570976 (Evoluir FP4202), EM571033 (Magnetec FP3345). Remetente confere e **o cadastro já contém o banco anunciado**. Nível atenção + `requer_confirmacao_cadastro` (a confirmação por telefone anterior não é verificável pelo analista). **Observação a verificar, sem concluir nada:** FP5079 e FP3614 são justamente dois dos fornecedores dos títulos com OC de outro fornecedor (TP431946, TP432337).
 - **2ª via legítima (12 de 13)** com remetente e beneficiário corretos: `segunda_via_boleto` é sinal informativo e não gera atenção sozinho (o ajuste evitou ~12 acionamentos de R$ 60).
 - **Instrução plantada em texto de terceiro** (ex.: EM570996, e o trecho dirigido ao "robô" em EM571119): a extração registra em `tentativas_de_instrucao`, o risco sobe para atenção/alto conforme o contexto e **nenhuma decisão muda por causa do texto**. `AnaliseRisco` não tem campo de ação.
-- **IA real não foi exercitada**: sem `ANTHROPIC_API_KEY` neste ambiente. `ExtratorClaude` foi testado com cliente falso (resposta válida, alucinação, falha de rede, sem tool_use, enum inválido, fechamento de tag). Falta uma execução com a API real antes de afirmar "funciona com Claude".
+- **IA real (GPT-4o, 246 mensagens, `reports/validacao_openai_246.md`):** **0 degradadas**; mesmo nível de risco que o mock em **243/246**, com os **5 de risco alto idênticos** (Embalarte, 2ª via com beneficiário trocado, falsa Receita, falso cartório, falso banco). As 3 divergências são mensagens de "pagamento parcial" em que o GPT marcou urgência ("para evitar multa") numa execução e não na outra: a saída do modelo **não é determinística** mesmo com temperatura 0, mas isso só move "nenhum" para "atenção" e não muda nenhuma decisão de pagamento (que só depende de risco alto e das regras). Tipo de pedido igual em 215/246: 30 são o mock dizendo `envio_boleto_nf` e o GPT `cobranca` (granularidade, mesmo risco) e 1 `cobranca`→`outro`. Por isso os testes e2e usam o mock. O `ExtratorClaude` (Anthropic) continua sem execução real.
 
 ## Achados da T8 (laço de eventos; fila inicial completa no corte, conferência 3 vias neutra)
 
@@ -112,7 +112,7 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - **Vencimento:** 2 títulos (TP432123, TP432281) têm vencimento 08/02/2027, que é Carnaval (bancos fechados); a duplicata vence em 06/02/2027 (sábado). A correção usa a data da duplicata, permitida pela política.
 - **Não existe título aberto vencendo na janela da agenda (03–13/11):** os 1.522 abertos vencem de 14/11 em diante. O "agendar sozinho" só ocorre com título novo ou programando adiante no lote do próprio vencimento (feito no cenário: 178 títulos ≤ R$ 5.000 até 23/11).
 - **Solicitações de aprovação:** só títulos ainda não incluídos em solicitação anterior do incidente são pedidos (o pré-fechamento reavalia o lote e reenviaria subconjuntos; isso gerou 14 pedidos antes do ajuste, 11 depois).
-- **Não verificado:** o `ExtratorClaude` não rodou com a API real (sem chave neste ambiente); todos os cenários usam o extrator mock.
+- **Não verificado:** o `ExtratorClaude` (Anthropic) não rodou com a API real (sem chave); o `ExtratorOpenAI` rodou com GPT-4o (ver Achados da T5). Os cenários e2e usam o extrator mock.
 
 ## Métricas — SUSPENSAS, reproduzir antes de usar
 
