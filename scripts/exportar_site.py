@@ -46,13 +46,17 @@ body { margin: 0; background: var(--gc-fundo-2); font-family: var(--gc-font); co
 .sx-grupo { display: flex; flex-wrap: wrap; gap: 8px; }
 .sx-btn { font: inherit; font-weight: 700; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 2px solid var(--gc-azul); background: var(--gc-fundo); color: var(--gc-azul); cursor: pointer;
   transition-property: background-color, color, transform; transition-duration: 150ms; transition-timing-function: ease-out; }
-.sx-btn:active { transform: scale(0.98); }
+.sx-btn:active { transform: scale(0.96); }
 .sx-btn[aria-pressed="true"], .sx-btn--primario { background: var(--gc-azul); color: #FFFFFF; }
 .sx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .sx-desc { color: var(--gc-ink-2); font-size: 14px; margin: 0 0 14px; max-width: 60em; }
 .sx-abas { display: flex; gap: 4px; overflow-x: auto; margin: 18px 0 0; border-bottom: 2px solid var(--gc-linha); }
 .sx-aba { font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; background: none; border: 0; border-bottom: 4px solid transparent; margin-bottom: -2px; color: var(--gc-ink-2); cursor: pointer; white-space: nowrap;
   transition-property: color, border-color; transition-duration: 150ms; transition-timing-function: ease-out; }
+.sx-aba:hover { color: var(--gc-azul); }
+.sx-aba:focus-visible, .sx-btn:focus-visible { outline: var(--gc-foco); outline-offset: -4px; }
+.sx-btn:hover:not(:disabled) { background: var(--gc-fundo-2); }
+.sx-controles--topo { margin-top: 16px; }
 .sx-aba[aria-selected="true"] { color: var(--gc-azul); border-bottom-color: var(--gc-azul); }
 .sx-painel { padding-top: 8px; }
 """
@@ -90,7 +94,8 @@ def montar() -> str:
 </head>
 <body>
 <main class="sx-site">
-  <div class="sx-controles">
+  <div id="hero"></div>
+  <div class="sx-controles sx-controles--topo">
     <div class="sx-grupo" id="cenarios" role="group" aria-label="Cenário"></div>
   </div>
   <p class="sx-desc" id="desc"></p>
@@ -101,7 +106,6 @@ def montar() -> str:
       <button type="button" class="sx-btn" id="reiniciar">Recomeçar o cenário</button>
     </div>
   </div>
-  <div id="hero"></div>
   <div class="sx-abas" role="tablist" aria-label="Seções" id="abas"></div>
   <div class="sx-painel sx-pagina" role="tabpanel" id="painel" tabindex="0"></div>
   <p class="sx-rodape">{html.escape(render.RODAPE)}</p>
@@ -114,11 +118,13 @@ let atual = 0, tique = 0, aba = 0;
 const $ = (id) => document.getElementById(id);
 ROTULOS.forEach((rot, i) => {{
   const b = document.createElement("button");
-  b.type = "button"; b.className = "sx-aba"; b.id = "aba-" + i; b.setAttribute("role", "tab"); b.textContent = rot;
+  b.type = "button"; b.className = "sx-aba"; b.id = "aba-" + i; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "painel"); b.textContent = rot;
   b.onclick = () => {{ aba = i; desenhar(""); }};
   b.onkeydown = (ev) => {{
     const d = ev.key === "ArrowRight" ? 1 : ev.key === "ArrowLeft" ? -1 : 0;
-    if (d) {{ aba = (i + d + ROTULOS.length) % ROTULOS.length; desenhar(""); $("aba-" + aba).focus(); ev.preventDefault(); }}
+    if (d) {{ aba = (i + d + ROTULOS.length) % ROTULOS.length; }}
+    else if (ev.key === "Home") {{ aba = 0; }} else if (ev.key === "End") {{ aba = ROTULOS.length - 1; }} else {{ return; }}
+    desenhar(""); $("aba-" + aba).focus(); ev.preventDefault();
   }};
   $("abas").appendChild(b);
 }});
@@ -132,7 +138,8 @@ function desenhar(anuncio) {{
   $("avancar").disabled = tique >= ultimo;
   $("pre").disabled = tique >= ultimo;
   [...$("cenarios").children].forEach((b, i) => b.setAttribute("aria-pressed", String(i === atual)));
-  if (anuncio) $("aviso").textContent = anuncio + " Tique " + tique + " de " + ultimo + ".";
+  if (document.activeElement && document.activeElement.disabled) $("painel").focus();
+  if (anuncio) {{ $("aviso").textContent = ""; setTimeout(() => {{ $("aviso").textContent = anuncio + " " + ($("hero").querySelector("h1") || {{}}).textContent; }}, 50); }}
 }}
 DADOS.forEach((c, i) => {{
   const b = document.createElement("button");

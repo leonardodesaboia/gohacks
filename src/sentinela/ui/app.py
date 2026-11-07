@@ -52,10 +52,10 @@ if c3.button("Recomeçar o cenário", key="reiniciar", use_container_width=True)
         st.session_state["sessao"] = s = vm.criar_sessao(chave, extrator)
 
 # ------------------------------------------------------------------ a página
-st.html(render.html_hero(s))
+st.html(f'<div lang="pt-BR">{render.html_hero(s)}</div>')
 secoes = render.abas(s, svg_embutido=False)  # svg como imagem: o sanitizador do st.html remove <svg>
 guias = st.tabs([rot for _, rot, _ in secoes])
 for guia, (_, _, conteudo) in zip(guias, secoes):
     with guia:
-        st.html(f'<div class="sx-pagina">{conteudo}</div>')
-st.html(render.html_rodape())
+        st.html(f'<div class="sx-pagina" lang="pt-BR">{conteudo}</div>')
+st.html(f'<div lang="pt-BR">{render.html_rodape()}</div>')

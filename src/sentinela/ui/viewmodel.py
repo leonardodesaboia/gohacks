@@ -237,7 +237,7 @@ def manchete(s: Sessao) -> tuple[str, str]:
         titulo = f"{n} pagamentos saíram do lote {antecedencia} antes do corte." if n > 1 else f"1 pagamento saiu do lote {antecedencia} antes do corte."
         msg = next((m for m in tempo["marcos"] if m["tipo"] == "mensagem"), None)
         causa = f"Uma mensagem suspeita chegou às {msg['t']:%H:%M} e o agente agiu às {t_acao:%H:%M}." if msg else f"O agente agiu às {t_acao:%H:%M} de {t_acao:%d/%m}."
-        return titulo, f"{causa} O lote {s.corte_lote} só fecha às {s.corte_instante:%H:%M} de {s.corte_instante:%d/%m}."
+        return titulo, f"{causa} O banco só fecha o lote às {s.corte_instante:%H:%M} de {s.corte_instante:%d/%m}."
     t = totais(s)
     agiu = t["retirados"] + t["corrigidos"] + t["pessoas"] + t["aprovacoes"]
     if agiu:
