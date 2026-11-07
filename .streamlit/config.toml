@@ -1,0 +1,13 @@
+[theme]
+# Identidade Gocase (brandbook 2022). Ver docs/06-DESIGN-SYSTEM.md
+primaryColor = "#005BAA"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F6F9FC"
+textColor = "#0B1F33"
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

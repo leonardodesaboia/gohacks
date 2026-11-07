@@ -1,0 +1,111 @@
+/* Sentinela CP — tokens visuais (identidade Gocase, brandbook 2022). Fonte: docs/06-DESIGN-SYSTEM.md
+   Cores da marca são históricas documentadas, não a paleta institucional atual da Gogroup.
+   Nenhuma cor literal fora deste arquivo e de ui/theme.py. */
+
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Caveat:wght@600&display=swap");
+
+:root {
+  /* marca */
+  --gc-azul: #005BAA;
+  --gc-coral: #F37053;
+  --gc-rosa: #EC3FAA;
+  --gc-turquesa: #94D6DA;
+  --gc-lima: #E9ED9A;
+  --gc-rosa-claro: #FFD6DC;
+
+  /* neutros derivados (não são da marca) */
+  --gc-ink: #0B1F33;
+  --gc-ink-2: #3C566E;
+  --gc-linha: #D9E3EC;
+  --gc-fundo: #FFFFFF;
+  --gc-fundo-2: #F6F9FC;
+  --gc-azul-900: #003D73;
+  --gc-cancelado: #E4EBF2;
+
+  /* tipografia */
+  --gc-font: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gc-font-destaque: "Caveat", "Segoe Print", cursive;
+
+  /* forma e espaço */
+  --gc-raio: 16px;
+  --gc-raio-pilula: 999px;
+  --gc-sombra: 0 2px 0 rgba(11, 31, 51, .06);
+  --gc-foco: 3px solid var(--gc-azul);
+}
+
+html, body, .stApp {
+  font-family: var(--gc-font);
+  color: var(--gc-ink);
+  background: var(--gc-fundo);
+}
+
+h1 { font-weight: 800; font-size: 40px; line-height: 48px; color: var(--gc-azul); }
+h2 { font-weight: 700; font-size: 24px; line-height: 32px; color: var(--gc-azul); }
+.gc-rotulo { font-weight: 600; font-size: 13px; line-height: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--gc-ink-2); }
+.gc-valor { font-weight: 700; font-variant-numeric: tabular-nums; }
+.gc-destaque { font-family: var(--gc-font-destaque); font-size: 28px; color: var(--gc-azul); }
+
+:focus-visible { outline: var(--gc-foco); outline-offset: 2px; }
+
+/* color blocking */
+.gc-bloco-azul {
+  background: linear-gradient(135deg, var(--gc-azul), var(--gc-turquesa));
+  color: #FFFFFF;
+  border-radius: var(--gc-raio);
+  padding: 24px;
+}
+.gc-bloco-risco { background: var(--gc-coral); color: var(--gc-ink); border-radius: var(--gc-raio); padding: 24px; }
+
+/* cartão */
+.gc-card {
+  background: var(--gc-fundo);
+  border: 1px solid var(--gc-linha);
+  border-radius: var(--gc-raio);
+  box-shadow: var(--gc-sombra);
+  padding: 16px 24px;
+}
+.gc-card .gc-ia, .gc-card .gc-regra { margin: 8px 0; }
+.gc-card .gc-ia::before   { content: "IA leu: ";       font-weight: 700; color: var(--gc-azul); }
+.gc-card .gc-regra::before { content: "Regra decidiu: "; font-weight: 700; color: var(--gc-azul); }
+
+/* selos de decisão (rótulo + ícone sempre; nunca só cor) */
+.gc-selo {
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: var(--gc-raio-pilula);
+  padding: 4px 12px;
+  font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--gc-ink);
+}
+.gc-selo--segue     { background: var(--gc-turquesa); }
+.gc-selo--corrigido { background: var(--gc-lima); }
+.gc-selo--retirado  { background: var(--gc-coral); }
+.gc-selo--humano    { background: var(--gc-rosa-claro); border: 2px solid var(--gc-rosa); }
+.gc-selo--cancelado { background: var(--gc-cancelado); }
+.gc-selo--degradado { background: var(--gc-fundo); border: 2px dashed var(--gc-coral); }
+
+/* sticker: um por tela (REPLAY LOCAL / INTEGRAÇÃO / NOVO) */
+.gc-sticker {
+  display: inline-block; transform: rotate(-3deg);
+  background: var(--gc-rosa); color: var(--gc-ink);
+  border-radius: 8px; padding: 4px 12px;
+  font-weight: 800; font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+}
+
+/* botões */
+.gc-btn { border-radius: var(--gc-raio-pilula); padding: 8px 24px; font-weight: 700; border: 2px solid var(--gc-azul); cursor: pointer; }
+.gc-btn--primario { background: var(--gc-azul); color: #FFFFFF; }
+.gc-btn--primario:hover { background: var(--gc-azul-900); }
+.gc-btn--secundario { background: transparent; color: var(--gc-azul); }
+.gc-btn--perigo { background: transparent; color: var(--gc-ink); border-color: var(--gc-coral); }
+
+/* contagem regressiva do lote (só exibição) */
+.gc-contagem { background: var(--gc-azul); color: #FFFFFF; border-radius: var(--gc-raio); padding: 16px 24px; font-weight: 800; font-size: 40px; font-variant-numeric: tabular-nums; }
+.gc-contagem--urgente { background: var(--gc-coral); color: var(--gc-ink); }
+
+/* tabela */
+.gc-tabela { width: 100%; border-collapse: collapse; }
+.gc-tabela th { background: var(--gc-fundo-2); text-align: left; padding: 8px 12px; }
+.gc-tabela td { border-bottom: 1px solid var(--gc-linha); padding: 8px 12px; }
+.gc-tabela td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

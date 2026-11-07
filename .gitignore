@@ -1,0 +1,24 @@
+# dados do evento (sintéticos, fornecidos; não versionar)
+data/raw/
+data/*.db
+*.db
+*.sqlite
+
+# segredos
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# ide / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

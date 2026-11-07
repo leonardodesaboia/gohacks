@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinela-cp"
+version = "0.1.0"
+description = "Agente de IA que confere pagamentos antes do fechamento do lote (GoHacks Talent 2026)."
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.7",
+  "pandas>=2.2",
+  "anthropic>=0.40",
+  "python-dotenv>=1.0",
+  "streamlit>=1.38",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
