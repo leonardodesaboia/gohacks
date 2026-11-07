@@ -69,7 +69,13 @@ Políticas do evento ficam explícitas em config/código (tolerâncias, exceçõ
 | `scoreboard.py` | placar (P1) |
 | `ui/app.py`, `ui/theme.py` | Streamlit de narração (design system Gocase) |
 
-## MotorDecisao (esboço da lógica)
+## MotorDecisao — implementado na T6 (`src/sentinela/decision.py`)
+
+Função pura `decidir(FatosTitulo) -> Decisao` (e `decidir_comunicacao(AnaliseRisco)`). Ordem: **R0** estado final · **R1** fraude/identidade (risco alto em comunicação do fornecedor, identidade divergente, OC de outro fornecedor: retira do lote e aciona PS01; lote já fechado aciona PS02) · **R2** duplicidade comprovada (cancela ≤ alçada, senão retira + solicita aprovação) · **R3** evidência ausente/ambígua (aciona pessoa; nada executa; `fallback_no_corte`) · **R4** troca bancária pedida com cadastro mexido há ≤30 dias (aprovação dupla) · **R5** divergência OC×NF (aciona o comprador da categoria) · **R6** valor/vencimento (corrige só com causa única e diferença ≤ R$5.000; senão aprovação) · **R7** caso limpo (mantém, agenda ou pede aprovação por alçada agregada).
+
+`Decisao` carrega `acoes` (lista ordenada de `AcaoPlanejada`), `fallback_no_corte` (o que o pré-fechamento faz se ninguém resolver) e `incidente` (chave para agrupar alertas: comunicação e títulos do mesmo fornecedor compartilham `"<fornecedor>|fraude"`). Verificado por testes: um por regra, uma varredura de ~12 mil combinações (nunca fora do papel ou da alçada, nunca executa sem evidência, sempre retira em risco alto), uma varredura exaustiva da alçada de agendamento e casos reais do evento.
+
+## MotorDecisao (esboço original da lógica, histórico)
 
 Entrada: `Dossie`. Saída: `Decisao`. **Sem I/O, sem LLM.**
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -101,8 +102,13 @@ class Dossie(_Base):
     confianca: Confianca = Confianca.ALTA
 
 
-class Decisao(_Base):
+class AcaoPlanejada(_Base):
     acao: Acao
+    parametros: dict[str, Any] = Field(default_factory=dict)
+
+
+class Decisao(_Base):
+    acao: Acao  # ação principal (a primeira de `acoes`)
     regra_aplicada: str
     alcada: str
     aprovacao_necessaria: str | None = None
@@ -110,6 +116,9 @@ class Decisao(_Base):
     chave_idempotencia: str
     motivo: str
     pessoa_a_acionar: str | None = None
+    acoes: tuple[AcaoPlanejada, ...] = ()
+    fallback_no_corte: Acao | None = None  # o que o pré-fechamento faz se o humano não resolver a tempo
+    incidente: str | None = None  # chave para agrupar alertas do mesmo incidente
 
 
 class DadosBancariosCitados(_Base):
