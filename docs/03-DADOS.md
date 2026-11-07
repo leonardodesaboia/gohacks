@@ -60,6 +60,17 @@ Dicionário oficial completo: `docs/fonte-oficial/dicionario_de_dados.md`. Aqui,
 - Outros remetentes relatados como suspeitos na análise anterior (validar um a um): `seguranca@meridiano-online.net` (phishing de token do banco pagador), `portal-nfe-receita.com` (falsa Receita), `cobranca@protesto-nacional.net` (falsa ameaça de protesto), `cobranca.pigmentosaquarela@outlook.com` (2ª via de boleto por domínio público). Remetente que se diz banco/órgão não tem "domínio cadastrado" para comparar: tratar por política (PS08, PS02).
 - A maioria das 246 comunicações é legítima (cobranças e envio de boleto de fornecedores). **Precisão importa**: acionamento desnecessário custa R$60.
 
+## Achados da T2 (medidos nos CSVs, 2026-11-07)
+
+- **Os CSVs são uma foto de 02/11 08:00. Nada chega depois.** Último título lançado: 30/10 17:51. Última comunicação: 02/11 07:24. Última NF recebida: 31/10 18:20. A partir do instante inicial o replay não tem o que liberar; só a API do evento (se existir) entrega itens novos por tique.
+- **Para demonstrar "chegou uma mensagem antes do corte" use replay retroativo:** iniciar o `SimClock` num instante anterior (ex.: 29/10 14:00; EM571119 chega às 15:42) e avançar. O adaptador reconstrói título e cadastro "como eram" no instante. Declarar sempre como replay retroativo.
+- **Estado reconstruído:** status do título derivado de `data_lancamento`, `data_baixa`/`data_pagamento`, `data_cancelamento` e `lote_remessa`. Pressuposto: o título entra no lote no lançamento (não há carimbo de agendamento). No corte, coincide com o CSV nas 7.120 linhas, com a agenda (876) e com o cadastro (131).
+- **Cadastro retroativo:** `alteracoes_cadastro.csv` é lido só dentro do simulador, para reverter alterações posteriores ao instante. O agente continua sem acesso a ele.
+- **FP4615 (Embalarte):** conta antiga banco 774 / ag. 7166 / conta 9517944-5; trocada em 30/10 16:05 (`usuario_07`, origem e-mail, sem confirmação registrada) para banco 905 / 0001 / 4471203-9, **a mesma conta pedida por EM571119 em 29/10 15:42**. No corte, a agenda já aponta o destino novo. 192 títulos no total do fornecedor.
+- **Pedidos de compra com aprovação posterior ao corte** (3, datas até 03/11): o adaptador mascara aprovação e mostra `pendente_aprovacao` até o instante da aprovação.
+- **Feriado de remessa:** só entram feriados com `afeta_remessa = sim` (nacionais). Estaduais/municipais não bloqueiam remessa. 02/11 (Finados) bloqueia; o primeiro fechamento do período é **03/11 10:00 (MER)**.
+- **Efeito da alçada na demo:** `corrigir_lancamento` de valor só vale sem aprovação se **|novo − atual| ≤ R$5.000**. Um erro de fator 10× com título grande (ex.: R$90 mil → R$9 mil) exige aprovador. Para a demo 2 escolha um título pequeno (≲ R$5,5 mil).
+
 ## Métricas — SUSPENSAS, reproduzir antes de usar
 
 Não existe número validado. Valores abaixo vêm de auditorias anteriores **não reproduzidas** e **não podem** aparecer em código, UI, slides ou submissão:

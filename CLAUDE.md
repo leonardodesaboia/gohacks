@@ -74,7 +74,7 @@ Ao terminar cada tarefa: rodar `pytest`, atualizar `relatorio.md` (1 linha por e
 - Testes baseados em casos reais dos CSVs, não em fixtures inventadas. Teste negativo obrigatório para cada regra de papel e de segurança.
 - Sem comentários óbvios. Docstring curta onde a regra vem da política (citar a chave de `politicas.csv`).
 - **Windows:** o console padrão é cp1252 e quebra com ícones/acentos no `print`. Rodar com `PYTHONUTF8=1` (ou `set PYTHONIOENCODING=utf-8`). Ao ler CSV, sempre `encoding="utf-8"`. Ambiente: `python -m venv .venv`, depois `PYTHONPATH=src` ou `pip install -e ".[dev]"`.
-- Estado atual do repo: já existem e passam em teste (30) `contracts.py`, `roles.py` e `ui/theme.py`; **todo o resto é para construir** seguindo `docs/04-PLANO-DE-BUILD.md` a partir da T0.
+- Estado atual do repo: **T0, T1 e T2 prontas e testadas** (`scripts/validar_dados.py`, `contracts.py`, `roles.py`, `gateway.py`, `clock.py`, `adapters/replay.py`, `adapters/api.py` stub, `ui/theme.py`). **Próxima: T3** (`identity.py`). Leia "Achados da T2" em `docs/03-DADOS.md`: os CSVs são foto de 02/11 08:00, o replay futuro não tem o que liberar e a demo da mensagem antes do corte usa **replay retroativo**.
 
 ## 8. Perguntas em aberto (resolver cedo, são bloqueantes)
 

@@ -10,6 +10,9 @@ Parte da avaliação (Modelagem 40% e "Como usou IA"): mostrar que conferi o que
 
 | 3 | 2026-11-07 | T0 | `tests/test_dados.py` importou o script por `importlib` sem registrar o módulo | `@dataclass` do script quebrou na coleta (`sys.modules` sem o módulo) | Registrei `sys.modules["validar_dados"]` antes do `exec_module`; 36 testes passam |
 
+| 4 | 2026-11-07 | T2 (plano) | O plano da T2 assumia que o relógio libera comunicações/títulos "futuros" ao avançar | Os CSVs são foto de 02/11 08:00; nada chega depois (última comunicação 07:24, último título 30/10) | Replay retroativo: relógio inicia antes e o adaptador reconstrói status e cadastro no instante; documentado em `docs/03-DADOS.md` |
+| 5 | 2026-11-07 | T2 (plano) | O plano mandava usar os feriados de `feriados_bancarios.csv` sem distinguir abrangência | Estaduais/municipais têm `sem_expediente_bancario=sim` mas `afeta_remessa=não` (compensação nacional funciona); tratar todas as linhas como não úteis erraria dias de remessa | `clock.py` só considera `sem_expediente_bancario=sim` **e** `afeta_remessa=sim`; teste com São José (CE) |
+
 _(acrescentar linhas a partir daqui durante o build)_
 
 ## Prompts que funcionaram
